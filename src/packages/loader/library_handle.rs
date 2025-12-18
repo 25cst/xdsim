@@ -1,10 +1,11 @@
-use std::{
-    path::{Path, PathBuf},
-    rc::Rc,
-};
+use std::{path::Path, rc::Rc};
 
 use libloading::{Library, Symbol};
 
+/// Handle to a loaded dynamic library
+///
+/// Cloning the handle will create new handles referencing the same library
+/// If the last handle to a library is dropped, the library is unloaded from memory
 #[derive(Clone)]
 pub struct LibraryHandle {
     library: Rc<Library>,
@@ -17,6 +18,13 @@ impl LibraryHandle {
         }
     }
 
+    /// DANGER!
+    /// Symbols are only valid if the library is loaded in memory
+    /// Because the library will only unload when all handles are dropped,
+    /// this may result in the symbol being valid for a while before becoming invalid
+    ///
+    /// You must store a copy of the originating LibraryHandle alongside the symbol
+    /// failure to do so will likely result in segfaults
     pub fn get_symbol<T>(
         &'_ self,
         symbol: &str,
