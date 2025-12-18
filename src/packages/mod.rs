@@ -1,2 +1,2 @@
-mod loaded;
+mod destructor;
 mod loader;

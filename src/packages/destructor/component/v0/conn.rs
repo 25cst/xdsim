@@ -5,9 +5,9 @@ use xdsim_cbinds::v0::{
     graphics::Graphic,
 };
 
-use crate::packages::loaded::{self, DestructRequest};
+use crate::packages::destructor::{self, DestructRequest};
 
-pub struct LoadedConnection {
+pub struct DestructedConnection {
     draw: fn(Connection, *const ConnectionDrawRequest) -> Graphic,
     definition: fn(Connection) -> ConnectionDefinition,
     properties: fn(ConnectionMut) -> PropertiesMut,
@@ -17,37 +17,37 @@ pub struct LoadedConnection {
     drop_mem: fn(ConnectionMut),
 }
 
-impl LoadedConnection {
-    pub fn new(request: &DestructRequest) -> Result<Self, loaded::Error> {
+impl DestructedConnection {
+    pub fn new(request: &DestructRequest) -> Result<Self, destructor::Error> {
         Ok(Self {
             draw: *request
                 .get_library()
                 .get_symbol("conn_draw", request.get_path())
-                .map_err(loaded::Error::from_get_symbol)?,
+                .map_err(destructor::Error::from_get_symbol)?,
             definition: *request
                 .get_library()
                 .get_symbol("conn_def", request.get_path())
-                .map_err(loaded::Error::from_get_symbol)?,
+                .map_err(destructor::Error::from_get_symbol)?,
             properties: *request
                 .get_library()
                 .get_symbol("conn_props", request.get_path())
-                .map_err(loaded::Error::from_get_symbol)?,
+                .map_err(destructor::Error::from_get_symbol)?,
             serialize: *request
                 .get_library()
                 .get_symbol("conn_serialize", request.get_path())
-                .map_err(loaded::Error::from_get_symbol)?,
+                .map_err(destructor::Error::from_get_symbol)?,
             deserialize: *request
                 .get_library()
                 .get_symbol("conn_deserialize", request.get_path())
-                .map_err(loaded::Error::from_get_symbol)?,
+                .map_err(destructor::Error::from_get_symbol)?,
             default_value: *request
                 .get_library()
                 .get_symbol("conn_default", request.get_path())
-                .map_err(loaded::Error::from_get_symbol)?,
+                .map_err(destructor::Error::from_get_symbol)?,
             drop_mem: *request
                 .get_library()
                 .get_symbol("conn_drop", request.get_path())
-                .map_err(loaded::Error::from_get_symbol)?,
+                .map_err(destructor::Error::from_get_symbol)?,
         })
     }
 }

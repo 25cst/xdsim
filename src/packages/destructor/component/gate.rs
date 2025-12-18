@@ -1,28 +1,28 @@
 use crate::packages::{
-    loaded::{self, DestructRequest, component::v0},
+    destructor::{self, DestructRequest, component::v0},
     loader::LibraryHandle,
 };
 
-pub struct LoadedConnection {
+pub struct DestructedGate {
     _library: LibraryHandle,
-    handle: LoadedConnectionHandle,
+    handle: DestructedGateHandle,
 }
 
-pub enum LoadedConnectionHandle {
-    V0(v0::LoadedConnection),
+pub enum DestructedGateHandle {
+    V0(v0::DestructedGate),
 }
 
-impl LoadedConnection {
-    pub fn new(request: DestructRequest) -> Result<Self, loaded::Error> {
+impl DestructedGate {
+    pub fn new(request: DestructRequest) -> Result<Self, destructor::Error> {
         let get_schema_version: fn() -> u32 = *request
             .get_library()
             .get_symbol("schema_version", request.get_path())
-            .map_err(loaded::Error::from_get_symbol)?;
+            .map_err(destructor::Error::from_get_symbol)?;
 
         let handle = match get_schema_version() {
-            0 => LoadedConnectionHandle::V0(v0::LoadedConnection::new(&request)?),
+            0 => DestructedGateHandle::V0(v0::DestructedGate::new(&request)?),
             unsupported_version => {
-                return Err(loaded::Error::UnsupportedSchemaVersion {
+                return Err(destructor::Error::UnsupportedSchemaVersion {
                     version: unsupported_version,
                 });
             }
