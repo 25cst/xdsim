@@ -25,6 +25,8 @@ impl LibraryHandle {
     ///
     /// You must store a copy of the originating LibraryHandle alongside the symbol
     /// failure to do so will likely result in segfaults
+    ///
+    /// Note: lib_path is shown in the error message if getting symbol failed
     pub fn get_symbol<T>(
         &'_ self,
         symbol: &str,

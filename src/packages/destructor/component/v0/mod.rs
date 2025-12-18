@@ -1,3 +1,5 @@
+//! Destructors for schema version 0
+
 mod data;
 pub use data::DestructedData;
 mod gate;

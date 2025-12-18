@@ -3,6 +3,9 @@ use crate::packages::{
     loader::LibraryHandle,
 };
 
+/// Destructs a library into connection functions
+///
+/// Note: a copy of library is held for the functions to remain valid
 pub struct DestructedConnection {
     _library: LibraryHandle,
     handle: DestructedConnectionHandle,
