@@ -1,16 +1,19 @@
-use xdsim_cbinds::v0::{app_state::PropertiesMut, common::Slice, component::*, graphics::Graphic};
+use xdsim_cbinds::{
+    common::Slice,
+    v0::{app_state::PropertiesMut, component::*, graphics::Graphic},
+};
 
 use crate::packages::destructor::{self, DestructRequest};
 
 pub struct DestructedGate {
-    tick: fn(GateMut, *const GateTickRequest) -> Slice,
-    draw: fn(Gate, *const GateDrawRequest) -> Graphic,
-    definition: fn(Gate) -> GateDefinition,
-    properties: fn(GateMut) -> PropertiesMut,
-    serialize: fn(Gate) -> Slice,
-    deserialize: fn(Slice) -> GateMut,
-    default_value: fn() -> GateMut,
-    drop_mem: fn(GateMut),
+    pub tick: fn(GateMut, *const GateTickRequest) -> Slice,
+    pub draw: fn(Gate, *const GateDrawRequest) -> Graphic,
+    pub definition: fn(Gate) -> GateDefinition,
+    pub properties: fn(GateMut) -> PropertiesMut,
+    pub serialize: fn(Gate) -> Slice,
+    pub deserialize: fn(Slice) -> GateMut,
+    pub default_value: fn() -> GateMut,
+    pub drop_mem: fn(GateMut),
 }
 
 impl DestructedGate {

@@ -6,4 +6,4 @@ edition = "2024"
 [dependencies]
 libloading = "0.9.0"
 # xdsim-cbinds = { path = "../xdsim-cbinds/", features = [ "v0-all", "impl" ] }
-xdsim-cbinds = { git = "https://github.com/25cst/xdsim-cbinds", rev = "8f8eccf", features = [ "v0-all", "impl" ] }
+xdsim-cbinds = { git = "https://github.com/25cst/xdsim-cbinds", rev = "e406d0f", features = [ "v0-all", "impl" ] }

@@ -1,2 +1,2 @@
-mod destructor;
+pub mod destructor;
 mod loader;

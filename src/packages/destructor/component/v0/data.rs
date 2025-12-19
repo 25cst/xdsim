@@ -1,15 +1,15 @@
-use xdsim_cbinds::v0::{
+use xdsim_cbinds::{
     common::Slice,
-    component::{Data, DataMut},
+    v0::component::{Data, DataMut},
 };
 
 use crate::packages::destructor::{self, DestructRequest};
 
 pub struct DestructedData {
-    serialize: fn(Data) -> Slice,
-    deserialize: fn(Slice) -> DataMut,
-    default_value: fn() -> DataMut,
-    drop_mem: fn(DataMut),
+    pub serialize: fn(Data) -> Slice,
+    pub deserialize: fn(Slice) -> DataMut,
+    pub default_value: fn() -> DataMut,
+    pub drop_mem: fn(DataMut),
 }
 
 impl DestructedData {

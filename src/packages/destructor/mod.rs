@@ -2,6 +2,7 @@
 //! - Destructs a library into a struct containing all functions of interest in the library
 
 mod component;
+pub use component::*;
 mod error;
 pub use error::Error;
 mod requests;

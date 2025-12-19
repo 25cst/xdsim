@@ -1,20 +1,22 @@
-use xdsim_cbinds::v0::{
-    app_state::PropertiesMut,
+use xdsim_cbinds::{
     common::Slice,
-    component::{Connection, ConnectionDefinition, ConnectionDrawRequest, ConnectionMut},
-    graphics::Graphic,
+    v0::{
+        app_state::PropertiesMut,
+        component::{Connection, ConnectionDefinition, ConnectionDrawRequest, ConnectionMut},
+        graphics::Graphic,
+    },
 };
 
 use crate::packages::destructor::{self, DestructRequest};
 
 pub struct DestructedConnection {
-    draw: fn(Connection, *const ConnectionDrawRequest) -> Graphic,
-    definition: fn(Connection) -> ConnectionDefinition,
-    properties: fn(ConnectionMut) -> PropertiesMut,
-    serialize: fn(Connection) -> Slice,
-    deserialize: fn(Slice) -> ConnectionMut,
-    default_value: fn() -> ConnectionMut,
-    drop_mem: fn(ConnectionMut),
+    pub draw: fn(Connection, *const ConnectionDrawRequest) -> Graphic,
+    pub definition: fn(Connection) -> ConnectionDefinition,
+    pub properties: fn(ConnectionMut) -> PropertiesMut,
+    pub serialize: fn(Connection) -> Slice,
+    pub deserialize: fn(Slice) -> ConnectionMut,
+    pub default_value: fn() -> ConnectionMut,
+    pub drop_mem: fn(ConnectionMut),
 }
 
 impl DestructedConnection {
