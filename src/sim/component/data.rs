@@ -5,6 +5,9 @@ use crate::{
     packages::destructor::DestructedData,
 };
 
+/// A piece of simulation state data
+/// - automatically drops data when self is dropped
+/// - is always valid
 pub struct SimData {
     handle: Rc<DestructedData>,
     data_ptr: DataPtrMut,
