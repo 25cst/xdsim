@@ -11,6 +11,8 @@ use crate::{
     sim::{self, component::SimData},
 };
 
+/// A single gate
+/// - calls drop_mem on itself when dropped
 pub struct SimGate {
     handle: Rc<DestructedGate>,
     gate_ptr: GatePtrMut,
@@ -19,12 +21,17 @@ pub struct SimGate {
     output_targets: Vec<SimGateIOEntry>,
 }
 
+/// an IO entry struct that contains the handle to the Data
+/// and the buffer the data is to be fetched from/put onto
+/// buffer_id is none if it is not connected to an input/output wire for that gate IO
 struct SimGateIOEntry {
     pub handle: Rc<DestructedData>,
     pub buffer_id: Option<ComponentId>,
 }
 
 impl SimGate {
+    /// Create a new gate with its default configuation given a handle
+    /// It will fail if one of the data type it references is not in world (data_handles)
     pub fn new_default(
         handle: Rc<DestructedGate>,
         data_handles: HashMap<ComponentLibMinorId, Rc<DestructedData>>,
@@ -148,5 +155,11 @@ impl SimGate {
                 component_ids: missing_data,
             })
         }
+    }
+}
+
+impl Drop for SimGate {
+    fn drop(&mut self) {
+        self.handle.drop_mem(self.gate_ptr);
     }
 }
