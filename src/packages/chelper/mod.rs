@@ -1,4 +1,4 @@
-mod component;
+pub mod slice;
+
 mod error;
-mod sim_world;
 pub use error::Error;

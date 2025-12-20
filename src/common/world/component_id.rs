@@ -1,5 +1,5 @@
 //! ID of a component in both the simulation and graphics world
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Hash, PartialEq, Eq, Clone, Copy)]
 pub struct ComponentId(u32);
 
 impl ComponentId {

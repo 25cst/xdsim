@@ -7,7 +7,7 @@ use crate::packages::destructor::{self, DestructRequest};
 
 pub struct DestructedData {
     pub serialize: fn(Data) -> Slice,
-    pub deserialize: fn(Slice) -> DataMut,
+    pub deserialize: fn(*const Slice) -> DataMut,
     pub default_value: fn() -> DataMut,
     pub drop_mem: fn(DataMut),
 }

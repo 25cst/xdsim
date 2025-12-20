@@ -3,9 +3,12 @@ use xdsim_cbinds::{
     v0::component::{Data, DataMut},
 };
 
-use crate::packages::{
-    destructor::{self, DestructRequest, component::v0},
-    loader::LibraryHandle,
+use crate::{
+    common::world::{DataPtr, DataPtrMut},
+    packages::{
+        destructor::{self, DestructRequest, component::v0},
+        loader::LibraryHandle,
+    },
 };
 
 /// Destructs a library into data functions
@@ -44,7 +47,7 @@ impl DestructedData {
 
     /// this is guaranteed to succeed
     /// (unless the component file throws an error)
-    pub fn serialize(&self, data: Data) -> Slice {
+    pub fn serialize(&self, data: DataPtr) -> Slice {
         match &self.handle {
             DestructedDataHandle::V0(handle) => (handle.serialize)(data),
         }
@@ -53,7 +56,7 @@ impl DestructedData {
     /// if deserialize fails, returns a None
     /// DataMut is guaranteed to be not null
     /// (unless the component file throws an error)
-    pub fn deserialize(&self, bytes: Slice) -> Option<DataMut> {
+    pub fn deserialize(&self, bytes: &Slice) -> Option<DataPtrMut> {
         match &self.handle {
             DestructedDataHandle::V0(handle) => {
                 let ptr = (handle.deserialize)(bytes);
@@ -64,7 +67,7 @@ impl DestructedData {
 
     /// this is guaranteed to succeed
     /// (unless the component file throws an error)
-    pub fn default_value(&self) -> DataMut {
+    pub fn default_value(&self) -> DataPtrMut {
         match &self.handle {
             DestructedDataHandle::V0(handle) => (handle.default_value)(),
         }
@@ -74,7 +77,7 @@ impl DestructedData {
     /// it is important for the pointer to be valid
     /// otherwise this will lead to a double free or segfault
     /// (unless the component file throws an error, or the data is already been dropped)
-    pub fn drop_mem(&self, data: DataMut) {
+    pub fn drop_mem(&self, data: DataPtrMut) {
         match &self.handle {
             DestructedDataHandle::V0(handle) => (handle.drop_mem)(data),
         }
