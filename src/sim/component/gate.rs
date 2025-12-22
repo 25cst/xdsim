@@ -8,7 +8,7 @@ use crate::{
         chelper::slice,
         destructor::{DestructedData, DestructedGate, DestructedGateIOEntry},
     },
-    sim::{self, component::SimData},
+    sim::{self, component::SimData, sim_world::WorldStateData},
 };
 
 /// A single gate
@@ -34,14 +34,14 @@ impl SimGate {
     /// It will fail if one of the data type it references is not in world (data_handles)
     pub fn new_default(
         handle: Rc<DestructedGate>,
-        data_handles: HashMap<ComponentLibMinorId, Rc<DestructedData>>,
+        world_data: &WorldStateData,
     ) -> Result<Self, sim::Error> {
         let gate_ptr = handle.default_value();
         let definition = handle.normalised_definition(gate_ptr);
 
         fn to_simgate_io_entries(
             destructed_io_entries: Vec<DestructedGateIOEntry>,
-            data_handles: &HashMap<ComponentLibMinorId, Rc<DestructedData>>,
+            world_data: &WorldStateData,
         ) -> Result<Vec<SimGateIOEntry>, sim::Error> {
             let mut simgate_io_entries = Vec::with_capacity(destructed_io_entries.len());
             for DestructedGateIOEntry {
@@ -52,7 +52,7 @@ impl SimGate {
             {
                 let data_type = data_type.into_minor();
                 simgate_io_entries.push(SimGateIOEntry {
-                    handle: match data_handles.get(&data_type) {
+                    handle: match world_data.get_handle(&data_type) {
                         Some(destructed_lib) => destructed_lib.clone(),
                         None => {
                             return Err(sim::Error::MissingDataType {
@@ -68,8 +68,8 @@ impl SimGate {
         }
 
         Ok(Self {
-            input_sources: to_simgate_io_entries(definition.inputs, &data_handles)?,
-            output_targets: to_simgate_io_entries(definition.outputs, &data_handles)?,
+            input_sources: to_simgate_io_entries(definition.inputs, world_data)?,
+            output_targets: to_simgate_io_entries(definition.outputs, world_data)?,
             gate_ptr,
             handle,
         })
@@ -80,8 +80,7 @@ impl SimGate {
     /// a default value for that SimData is used and the world can containue as usual
     pub fn tick(
         &mut self, // doesn't need to be mut, if that is causing issues, will remove
-        data_readonly: &HashMap<ComponentId, SimData>,
-        data_writable: &mut HashMap<ComponentId, SimData>,
+        world_data: &mut WorldStateData,
     ) -> Result<(), sim::Error> {
         struct TempData {
             ptr: DataPtr,
@@ -101,7 +100,7 @@ impl SimGate {
             self.input_sources
                 .iter()
                 .map(|SimGateIOEntry { handle, buffer_id }| match buffer_id {
-                    Some(buffer_id) => match data_readonly.get(buffer_id) {
+                    Some(buffer_id) => match world_data.read_buffer(buffer_id) {
                         Some(data) => unsafe { data.get_data_ptr() },
                         None => {
                             missing_data.push(*buffer_id);
@@ -139,7 +138,7 @@ impl SimGate {
             .for_each(
                 |(data, SimGateIOEntry { handle, buffer_id })| match buffer_id {
                     Some(output_target) => {
-                        data_writable.insert(
+                        world_data.write_buffer(
                             *output_target,
                             SimData::new_with_value(handle.clone(), *data),
                         );
