@@ -40,15 +40,20 @@ impl PackageIndexBuilder {
         let mut packages_cleaned = HashMap::new();
 
         for (name, mut package) in self.packages.into_iter() {
-            if package.len() != 1 {
-                self.errors.push(indexer::Error::MultipleDefinitions {
+            match package.len() {
+                0 => unreachable!(
+                    "this should not happen, a package is added to index only when a definition is found, please report this error"
+                ),
+                1 => {
+                    let _ = packages_cleaned.insert(name, package.remove(0));
+                }
+                _ => self.errors.push(indexer::Error::MultipleDefinitions {
+                    name: package[0].get_name().to_string(),
                     paths: package
                         .into_iter()
                         .map(|package_def| package_def.into_root())
                         .collect(),
-                });
-            } else {
-                packages_cleaned.insert(name, package.remove(0));
+                }),
             }
         }
 
@@ -86,7 +91,7 @@ impl PackageIndexBuilder {
         for root_path in paths {
             if !wrap_fs_op!(fs::exists(root_path), root_path) {
                 self.errors.push(indexer::Error::IndexMissingDir {
-                    path: root_path.clone(),
+                    index_path: root_path.clone(),
                 });
                 continue;
             }
@@ -120,7 +125,7 @@ impl PackageIndexBuilder {
                         Ok(res) => res,
                         Err(e) => {
                             self.errors.push(indexer::Error::ManifestParse {
-                                path: manifest_path.clone(),
+                                manifest_path: manifest_path.clone(),
                                 reason: e.to_string(),
                             });
                             continue;
@@ -132,7 +137,7 @@ impl PackageIndexBuilder {
                     }
                 }
 
-                if let Err(e) = self.add_package(package_builder) {
+                if let Err(e) = self.add_package(package_builder, &package_path) {
                     self.errors.push(e);
                 }
             }
@@ -143,7 +148,19 @@ impl PackageIndexBuilder {
 }
 
 impl PackageIndexBuilder {
-    fn add_package(&mut self, package: Package) -> Result<(), indexer::Error> {
+    fn add_package(&mut self, package: Package, package_root: &Path) -> Result<(), indexer::Error> {
+        let expected_name = package_root
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy();
+        if package.get_name() != expected_name {
+            return Err(indexer::Error::NameMismatch {
+                expected: expected_name.to_string(),
+                got: package.get_name().to_string(),
+                package_root: package_root.to_path_buf(),
+            });
+        }
+
         if package.is_empty() {
             let (name, package_root) = package.destruct();
             return Err(indexer::Error::NoVersions { name, package_root });
@@ -173,6 +190,7 @@ impl Package {
             Ok(v) => v,
             Err(e) => {
                 return Err(indexer::Error::BadVersionString {
+                    version_root: version_path.to_path_buf(),
                     got: path_version_string,
                     reason: e.to_string(),
                 });
