@@ -1,9 +1,7 @@
-use std::{collections::HashMap, rc::Rc};
-
-use xdsim_cbinds::v0::component::{DataMut, GateDefinition};
+use std::rc::Rc;
 
 use crate::{
-    common::world::{ComponentId, ComponentLibMinorId, DataPtr, DataPtrMut, GatePtrMut},
+    common::world::{ComponentId, DataPtr, DataPtrMut, GatePtrMut},
     packages::{
         chelper::slice,
         destructor::{DestructedData, DestructedGate, DestructedGateIOEntry},

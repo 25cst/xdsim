@@ -23,7 +23,8 @@ impl WorldState {
     /// this could be caused by bad implementation for edge cases such as:
     /// - new connection just added
     /// - an existing connection just been removed
-    /// for a good implementation this should not happen
+    ///
+    /// for a good implementation this should not happen.
     /// if an error is given, simply put it in debug logs or somewhere else
     pub fn tick_all(&mut self) -> Result<(), sim::Error> {
         let res = self.gates.tick_all(&mut self.data);

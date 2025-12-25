@@ -1,7 +1,4 @@
-use xdsim_cbinds::{
-    common::Slice,
-    v0::component::{Data, DataMut},
-};
+use xdsim_cbinds::common::Slice;
 
 use crate::{
     common::world::{DataPtr, DataPtrMut},

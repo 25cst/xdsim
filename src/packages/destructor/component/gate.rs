@@ -1,14 +1,10 @@
 use xdsim_cbinds::{
     common::{Direction, Slice, Vec2},
-    v0::{
-        app_state::PropertiesMut,
-        component::{Gate, GateDefinition, GateMut},
-        graphics::Graphic,
-    },
+    v0::{app_state::PropertiesMut, graphics::Graphic},
 };
 
 use crate::{
-    common::world::{ComponentLibMinorId, ComponentLibPatchId, GatePtr, GatePtrMut},
+    common::world::{ComponentLibPatchId, GatePtr, GatePtrMut},
     packages::{
         destructor::{self, DestructRequest, component::v0},
         loader::LibraryHandle,

@@ -10,7 +10,6 @@
 mod v0;
 
 mod conn;
-pub use conn::*;
 mod data;
 pub use data::*;
 mod gate;
