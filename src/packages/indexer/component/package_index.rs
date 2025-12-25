@@ -8,7 +8,7 @@ use semver::Version;
 use crate::packages::indexer::component::PackageManifest;
 
 /// an index of all packages
-#[cfg_attr(feature = "debug", derive(Debug))]
+#[cfg_attr(feature = "devel", derive(Debug))]
 pub struct PackageIndex {
     packages: HashMap<String, Package>,
 }
@@ -20,7 +20,7 @@ impl PackageIndex {
     }
 }
 
-#[cfg_attr(feature = "debug", derive(Debug))]
+#[cfg_attr(feature = "devel", derive(Debug))]
 pub struct Package {
     name: String,
     package_root: PathBuf,

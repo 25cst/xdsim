@@ -4,7 +4,7 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "debug", derive(Debug))]
+#[cfg_attr(feature = "devel", derive(Debug))]
 pub struct PackageManifest {
     name: String,
     version: Version,
@@ -23,7 +23,7 @@ impl PackageManifest {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "debug", derive(Debug))]
+#[cfg_attr(feature = "devel", derive(Debug))]
 pub enum PackageComponentType {
     #[serde(rename = "gate")]
     Gate,
