@@ -4,7 +4,7 @@ pub enum Error {
     /// the specified root directory for discovering packages does not exist
     IndexMissingDir { path: PathBuf },
     /// std::fs returned an error
-    FsError { path: PathBuf, reason: String },
+    Fs { path: PathBuf, reason: String },
     /// multiple errors occured when creating a new PackageIndex
     NewIndex { errors: Vec<Self> },
     /// parsing error for the manifest file

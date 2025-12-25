@@ -6,19 +6,13 @@ use std::{
 
 use semver::Version;
 
-use crate::packages::indexer::{self, component::PackageManifest};
-
-/// an index of all packages
-pub struct PackageIndex {
-    packages: HashMap<String, Package>,
-}
-
-impl PackageIndex {
-    /// internal: construct the struct
-    fn from_packages(packages: HashMap<String, Package>) -> Self {
-        Self { packages }
-    }
-}
+use crate::packages::indexer::{
+    self,
+    component::{
+        PackageManifest,
+        package_index::{Package, PackageIndex},
+    },
+};
 
 /// a package index builder is an incomplete package index
 /// it contains errors information which will be removed on build
@@ -50,7 +44,7 @@ impl PackageIndexBuilder {
                 self.errors.push(indexer::Error::MultipleDefinitions {
                     paths: package
                         .into_iter()
-                        .map(|package_def| package_def.package_root)
+                        .map(|package_def| package_def.into_root())
                         .collect(),
                 });
             } else {
@@ -77,7 +71,7 @@ impl PackageIndexBuilder {
                 match $ex {
                     Ok(res) => res,
                     Err(e) => {
-                        self.errors.push(indexer::Error::FsError {
+                        self.errors.push(indexer::Error::Fs {
                             path: PathBuf::from($p),
                             reason: e.to_string(),
                         });
@@ -151,10 +145,8 @@ impl PackageIndexBuilder {
 impl PackageIndexBuilder {
     fn add_package(&mut self, package: Package) -> Result<(), indexer::Error> {
         if package.is_empty() {
-            return Err(indexer::Error::NoVersions {
-                name: package.name,
-                package_root: package.package_root,
-            });
+            let (name, package_root) = package.destruct();
+            return Err(indexer::Error::NoVersions { name, package_root });
         }
 
         self.packages
@@ -166,25 +158,7 @@ impl PackageIndexBuilder {
     }
 }
 
-pub struct Package {
-    name: String,
-    package_root: PathBuf,
-    versions: HashMap<Version, PackageManifest>,
-}
-
 impl Package {
-    pub fn new(package_root: PathBuf) -> Self {
-        Self {
-            name: package_root
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string(),
-            package_root,
-            versions: HashMap::new(),
-        }
-    }
-
     pub fn add_version(
         &mut self,
         version_path: &Path,
@@ -213,15 +187,7 @@ impl Package {
             });
         }
 
-        self.versions.insert(expected_version, manifest);
+        self.insert(expected_version, manifest);
         Ok(())
-    }
-
-    pub fn get_name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.versions.is_empty()
     }
 }
