@@ -24,6 +24,10 @@ impl DepsResolveRequest {
     }
 }
 
+/// given a list of packages that are required,
+/// return a full list of packages and their dependencies that will need to be loaded
+///
+/// may return an indexer::Error::MissingDependencies if there are any missing dependencies
 pub fn deps_resolver<I: DepsResolvable>(
     resolvable: &I,
     requests: &[&DepsResolveRequest],
@@ -101,6 +105,7 @@ pub fn deps_resolver<I: DepsResolvable>(
         if missings.is_empty() {
             Ok(())
         } else {
+            // adds the current package to the end of the dependency chain
             let request = (request_name.to_string(), request_version.clone());
             missings
                 .iter_mut()
