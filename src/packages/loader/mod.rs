@@ -9,3 +9,5 @@ pub use error::Error;
 
 mod library_handle;
 pub use library_handle::LibraryHandle;
+
+mod indexed;

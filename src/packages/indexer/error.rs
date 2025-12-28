@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use semver::VersionReq;
+
 pub enum Error {
     /// the specified root directory for discovering packages does not exist
     IndexMissingDir { index_path: PathBuf },
@@ -34,4 +36,11 @@ pub enum Error {
     },
     /// the same package is defined in multiple locations
     MultipleDefinitions { name: String, paths: Vec<PathBuf> },
+
+    // resolver errors
+    /// Missing dependencies when resolving
+    /// the first item in the dependency_chain is the item that is immediately missing
+    MissingDependencies {
+        dependency_chains: Vec<Vec<(String, VersionReq)>>,
+    },
 }

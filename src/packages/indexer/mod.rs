@@ -27,5 +27,7 @@
 //! package.toml specs is found in component/package_manifest
 
 mod component;
+mod deps_resolvable;
+mod deps_resolver;
 mod error;
 pub use error::Error;
