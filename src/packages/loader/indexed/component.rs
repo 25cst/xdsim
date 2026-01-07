@@ -16,6 +16,9 @@ struct LoadedEntry {
     pub handle: LibraryHandle,
 }
 
+/// library loading utility for situations where:
+/// - you are trying to load component packages
+/// - you already have an index of the packages
 pub struct IndexComponentLoader {
     handles: HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, LoadedEntry>>>,
 }
