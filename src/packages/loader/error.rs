@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use semver::Version;
+
 #[derive(Debug)]
 pub enum Error {
     /// Failed to load library to memory
@@ -17,6 +19,18 @@ pub enum Error {
         symbol_name: String,
         /// Path to library that failed
         lib_path: PathBuf,
+    },
+    /// Missing package from index
+    MissingPackage {
+        name: String,
+    },
+    /// Missing package version from index
+    MissingPackageVersion {
+        name: String,
+        version: Version,
+    },
+    LoadAllComponentPackages {
+        errors: Vec<Self>,
     },
 }
 

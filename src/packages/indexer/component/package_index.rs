@@ -19,6 +19,10 @@ impl PackageIndex {
         Self { packages }
     }
 
+    pub fn get_package(&self, name: &str) -> Option<&Package> {
+        self.packages.get(name)
+    }
+
     /*
     pub fn get_data(&self) -> Vec<(ComponentLibPatchId, PathBuf)> {
 
@@ -75,5 +79,9 @@ impl Package {
     /// returns true if the package has no versions (how?)
     pub fn is_empty(&self) -> bool {
         self.versions.is_empty()
+    }
+
+    pub fn get_version(&self, version: &Version) -> Option<&PackageManifest> {
+        self.versions.get(version)
     }
 }

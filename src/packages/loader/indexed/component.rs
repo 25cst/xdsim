@@ -1,1 +1,98 @@
-pub struct IndexComponentLoader {}
+use std::{collections::HashMap, env::consts::DLL_EXTENSION};
+
+use semver::Version;
+
+use crate::packages::{
+    indexer::{self, component::PackageComponentType},
+    loader::{self, LibraryHandle, manager::LoadManager},
+};
+
+type PackageName = String;
+type PackageVersion = Version;
+type LibName = String;
+
+struct LoadedEntry {
+    pub variant: PackageComponentType,
+    pub handle: LibraryHandle,
+}
+
+pub struct IndexComponentLoader {
+    handles: HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, LoadedEntry>>>,
+}
+
+impl IndexComponentLoader {
+    /// given an index and a list of packages to load,
+    /// load all libraries that the packages contains into memory
+    ///
+    /// this does not destruct the libraries
+    pub fn load_all(
+        index: indexer::component::PackageIndex,
+        packages_to_load: HashMap<String, Vec<Version>>,
+    ) -> Result<Self, loader::Error> {
+        let mut errors = Vec::new();
+
+        let mut loaded_index = HashMap::new();
+
+        for (package_name, versions_to_load) in packages_to_load {
+            let mut package_map = HashMap::new();
+
+            let package = match index.get_package(&package_name) {
+                Some(pkg) => pkg,
+                None => {
+                    errors.push(loader::Error::MissingPackage { name: package_name });
+                    continue;
+                }
+            };
+
+            for version in versions_to_load {
+                let mut version_map = HashMap::new();
+
+                let manifest = match package.get_version(&version) {
+                    Some(manifest) => manifest,
+                    None => {
+                        errors.push(loader::Error::MissingPackageVersion {
+                            name: package_name.clone(),
+                            version: version.clone(),
+                        });
+                        continue;
+                    }
+                };
+
+                let libs_to_load = manifest.get_provides();
+                let version_root = package.get_root().join(version.to_string());
+
+                for (name, variant) in libs_to_load {
+                    let lib_path = version_root.join(name).with_extension(DLL_EXTENSION);
+
+                    let lib = match LoadManager::load_with_path(&lib_path) {
+                        Ok(loaded) => loaded,
+                        Err(e) => {
+                            errors.push(e);
+                            continue;
+                        }
+                    };
+
+                    version_map.insert(
+                        name.clone(),
+                        LoadedEntry {
+                            variant: *variant,
+                            handle: lib,
+                        },
+                    );
+                }
+
+                package_map.insert(version, version_map);
+            }
+
+            loaded_index.insert(package_name.clone(), package_map);
+        }
+
+        if errors.is_empty() {
+            Ok(Self {
+                handles: loaded_index,
+            })
+        } else {
+            Err(loader::Error::LoadAllComponentPackages { errors })
+        }
+    }
+}

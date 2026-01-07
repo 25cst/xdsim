@@ -20,6 +20,14 @@ impl PackageManifest {
     pub fn get_version(&self) -> &Version {
         &self.package.version
     }
+
+    pub fn get_info(&self) -> &PackageInfo {
+        &self.package
+    }
+
+    pub fn get_provides(&self) -> &HashMap<String, PackageComponentType> {
+        &self.provides
+    }
 }
 
 /// has public fields,
@@ -28,12 +36,12 @@ impl PackageManifest {
 /// the struct exists solely to add structure to the toml file
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "devel", derive(Debug))]
-struct PackageInfo {
+pub struct PackageInfo {
     pub name: String,
     pub version: Version,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 #[cfg_attr(feature = "devel", derive(Debug))]
 pub enum PackageComponentType {
     #[serde(rename = "gate")]

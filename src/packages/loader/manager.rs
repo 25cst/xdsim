@@ -21,7 +21,7 @@ impl LoadManager {
         self.root.join(path).with_extension(DLL_EXTENSION)
     }
 
-    pub fn load(lib_path: &Path) -> Result<LibraryHandle, super::Error> {
+    pub fn load_with_path(lib_path: &Path) -> Result<LibraryHandle, super::Error> {
         match unsafe { Library::new(lib_path) } {
             Ok(lib) => Ok(LibraryHandle::new(lib)),
             Err(e) => Err(super::Error::from_load_lib(e, lib_path.to_path_buf())),
