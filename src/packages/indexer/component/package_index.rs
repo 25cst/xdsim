@@ -18,6 +18,12 @@ impl PackageIndex {
     pub fn from_packages(packages: HashMap<String, Package>) -> Self {
         Self { packages }
     }
+
+    /*
+    pub fn get_data(&self) -> Vec<(ComponentLibPatchId, PathBuf)> {
+
+    }
+    */
 }
 
 #[cfg_attr(feature = "devel", derive(Debug))]
@@ -40,6 +46,7 @@ impl Package {
         }
     }
 
+    /// add a version to a package
     pub fn insert(&mut self, version: Version, manifest: PackageManifest) {
         self.versions.insert(version, manifest);
     }
@@ -52,7 +59,7 @@ impl Package {
         &self.package_root
     }
 
-    /// name, root
+    /// destruct into name, root
     pub fn destruct(self) -> (String, PathBuf) {
         (self.name, self.package_root)
     }
@@ -65,6 +72,7 @@ impl Package {
         self.package_root
     }
 
+    /// returns true if the package has no versions (how?)
     pub fn is_empty(&self) -> bool {
         self.versions.is_empty()
     }

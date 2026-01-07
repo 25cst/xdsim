@@ -4,7 +4,7 @@ use xdsim_cbinds::{
 };
 
 use crate::{
-    common::world::{ComponentLibPatchId, GatePtr, GatePtrMut},
+    common::world::{ComponentVersion, ComponentVersionReq, GatePtr, GatePtrMut},
     packages::{
         destructor::{self, DestructRequest, component::v0},
         loader::LibraryHandle,
@@ -16,23 +16,30 @@ use crate::{
 /// Note: a copy of library is held for the functions to remain valid
 pub struct DestructedGate {
     _library: LibraryHandle,
+    id: ComponentVersion,
     handle: DestructedGateHandle,
 }
 
 /// version-generic gate definition
 pub struct DestructedGateDefinition {
     /// inputs in the order they should appear in the slice
-    pub inputs: Vec<DestructedGateIOEntry>,
+    pub inputs: Vec<DestructedGateInputEntry>,
     /// outputs in the order they should appear in the slice
-    pub outputs: Vec<DestructedGateIOEntry>,
+    pub outputs: Vec<DestructedGateOutputEntry>,
     /// The visual bounding box (dimension) of the gate
     /// The bottom left corner is (0, 0), top right corner is (width, height)
     pub bounding_box: Vec2,
 }
 
-pub struct DestructedGateIOEntry {
+pub struct DestructedGateInputEntry {
     pub name: String,
-    pub data_type: ComponentLibPatchId,
+    pub data_type_req: ComponentVersionReq,
+    pub position: Vec2,
+}
+
+pub struct DestructedGateOutputEntry {
+    pub name: String,
+    pub data_type: ComponentVersion,
     pub position: Vec2,
 }
 
@@ -41,7 +48,10 @@ pub enum DestructedGateHandle {
 }
 
 impl DestructedGate {
-    pub fn new(request: DestructRequest) -> Result<Self, destructor::Error> {
+    pub fn new(
+        request: DestructRequest,
+        gate_id: ComponentVersion,
+    ) -> Result<Self, destructor::Error> {
         let get_schema_version: fn() -> u32 = *request
             .get_library()
             .get_symbol("schema_version", request.get_path())
@@ -58,6 +68,7 @@ impl DestructedGate {
 
         Ok(Self {
             _library: request.into_library(),
+            id: gate_id,
             handle,
         })
     }
@@ -83,9 +94,13 @@ impl DestructedGate {
     }
     */
 
-    pub fn normalised_definition(&self, gate: GatePtr) -> DestructedGateDefinition {
+    /// Returns a gate definition that is the same for all versions of gates
+    pub fn normalised_definition(
+        &self,
+        gate: GatePtr,
+    ) -> Result<DestructedGateDefinition, destructor::Error> {
         match &self.handle {
-            DestructedGateHandle::V0(handle) => handle.get_normalised_definition(gate),
+            DestructedGateHandle::V0(handle) => handle.get_normalised_definition(gate, &self.id),
         }
     }
 
@@ -131,5 +146,11 @@ impl DestructedGate {
         match &self.handle {
             DestructedGateHandle::V0(handle) => (handle.drop_mem)(gate),
         }
+    }
+}
+
+impl DestructedGate {
+    pub fn id(&self) -> &ComponentVersion {
+        &self.id
     }
 }

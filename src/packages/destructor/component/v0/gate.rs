@@ -1,13 +1,17 @@
+use semver::{Version, VersionReq};
 use xdsim_cbinds::{
     common::*,
     v0::{app_state::PropertiesMut, component::*, graphics::Graphic},
 };
 
 use crate::{
-    common::world::{ComponentLibPatchId, GatePtr},
+    common::world::{ComponentVersion, ComponentVersionReq, GatePtr},
     packages::{
         chelper::slice,
-        destructor::{self, DestructRequest, DestructedGateDefinition, DestructedGateIOEntry},
+        destructor::{
+            self, DestructRequest, DestructedGateDefinition, DestructedGateInputEntry,
+            DestructedGateOutputEntry,
+        },
     },
 };
 
@@ -60,45 +64,101 @@ impl DestructedGate {
         })
     }
 
-    pub fn get_normalised_definition(&self, gate: GatePtr) -> DestructedGateDefinition {
+    pub fn get_normalised_definition(
+        &self,
+        gate: GatePtr,
+        gate_id: &ComponentVersion,
+    ) -> Result<DestructedGateDefinition, destructor::Error> {
         let definition = (self.definition)(gate);
-        let inputs: &[GateIOEntry] = slice::from_slice(&definition.inputs);
-        let outputs: &[GateIOEntry] = slice::from_slice(&definition.outputs);
+        let inputs: &[GateInputEntry] = slice::from_slice(&definition.inputs);
+        let outputs: &[GateOutputEntry] = slice::from_slice(&definition.outputs);
 
-        pub fn map_io_entries(entries: &[GateIOEntry]) -> Vec<DestructedGateIOEntry> {
-            entries
-                .iter()
-                .map(
-                    |GateIOEntry {
-                         name,
-                         data_type:
-                             ComponentIdent {
-                                 package,
-                                 component,
-                                 major,
-                                 minor,
-                                 patch,
-                             },
-                         position,
-                     }| DestructedGateIOEntry {
-                        name: slice::from_str(name),
-                        data_type: ComponentLibPatchId {
-                            package: slice::from_str(package),
-                            component: slice::from_str(component),
-                            major: *major,
-                            minor: *minor,
-                            patch: *patch,
+        pub fn to_input_entries(
+            entries: &[GateInputEntry],
+            gate_id: &ComponentVersion,
+        ) -> Result<Vec<DestructedGateInputEntry>, destructor::Error> {
+            let mut out = Vec::with_capacity(entries.len());
+
+            for entry in entries {
+                let GateInputEntry {
+                    name,
+                    data_type_req:
+                        ComponentIdent {
+                            package,
+                            version,
+                            component,
                         },
-                        position: *position,
+                    position,
+                } = entry;
+
+                out.push(DestructedGateInputEntry {
+                    name: slice::from_str(name),
+                    data_type_req: ComponentVersionReq {
+                        package: slice::from_str(package),
+                        component: slice::from_str(component),
+                        version_req: match VersionReq::parse(&slice::from_str(version)) {
+                            Ok(v) => v,
+                            Err(e) => {
+                                return Err(destructor::Error::InvalidVersionReq {
+                                    component: Box::new(gate_id.clone()),
+                                    version: slice::from_str(version),
+                                    reason: e.to_string(),
+                                });
+                            }
+                        },
                     },
-                )
-                .collect()
+                    position: *position,
+                })
+            }
+
+            Ok(out)
         }
 
-        DestructedGateDefinition {
-            inputs: map_io_entries(inputs),
-            outputs: map_io_entries(outputs),
-            bounding_box: definition.bounding_box,
+        pub fn to_output_entries(
+            entries: &[GateOutputEntry],
+            gate_id: &ComponentVersion,
+        ) -> Result<Vec<DestructedGateOutputEntry>, destructor::Error> {
+            let mut out = Vec::with_capacity(entries.len());
+
+            for entry in entries {
+                let GateOutputEntry {
+                    name,
+                    data_type:
+                        ComponentIdent {
+                            package,
+                            version,
+                            component,
+                        },
+                    position,
+                } = entry;
+
+                out.push(DestructedGateOutputEntry {
+                    name: slice::from_str(name),
+                    data_type: ComponentVersion {
+                        package: slice::from_str(package),
+                        component: slice::from_str(component),
+                        version: match Version::parse(&slice::from_str(version)) {
+                            Ok(v) => v,
+                            Err(e) => {
+                                return Err(destructor::Error::InvalidVersionReq {
+                                    component: Box::new(gate_id.clone()),
+                                    version: slice::from_str(version),
+                                    reason: e.to_string(),
+                                });
+                            }
+                        },
+                    },
+                    position: *position,
+                })
+            }
+
+            Ok(out)
         }
+
+        Ok(DestructedGateDefinition {
+            inputs: to_input_entries(inputs, gate_id)?,
+            outputs: to_output_entries(outputs, gate_id)?,
+            bounding_box: definition.bounding_box,
+        })
     }
 }

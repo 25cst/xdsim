@@ -1,3 +1,43 @@
+use std::fmt::Display;
+
+use semver::{Version, VersionReq};
+
+/// Requirement for component, support rangers and wildcards
+/// e.g. >=0.1.0 or 0.1.*
+#[derive(Hash, PartialEq, Eq, Clone, Debug)]
+pub struct ComponentVersionReq {
+    pub package: String,
+    pub version_req: VersionReq,
+    pub component: String,
+}
+
+impl Display for ComponentVersionReq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "{}-{}::{}",
+            self.package, self.version_req, self.component
+        ))
+    }
+}
+
+/// A concrete component identifier
+#[derive(Hash, PartialEq, Eq, Clone, Debug)]
+pub struct ComponentVersion {
+    pub package: String,
+    pub version: Version,
+    pub component: String,
+}
+
+impl Display for ComponentVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "{}-{}::{}",
+            self.package, self.version, self.component
+        ))
+    }
+}
+
+/*
 #[derive(Hash, PartialEq, Eq)]
 pub struct ComponentLibPatchId {
     pub package: String,
@@ -38,3 +78,4 @@ impl ComponentLibPatchId {
         }
     }
 }
+*/

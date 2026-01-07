@@ -4,7 +4,7 @@ use crate::{
     common::world::{ComponentId, DataPtr, DataPtrMut, GatePtrMut},
     packages::{
         chelper::slice,
-        destructor::{DestructedData, DestructedGate, DestructedGateIOEntry},
+        destructor::{DestructedData, DestructedGate, DestructedGateDefinition},
     },
     sim::{self, component::SimData, sim_world::WorldStateData},
 };
@@ -15,16 +15,27 @@ pub struct SimGate {
     handle: Rc<DestructedGate>,
     gate_ptr: GatePtrMut,
 
-    input_sources: Vec<SimGateIOEntry>,
-    output_targets: Vec<SimGateIOEntry>,
+    definition: DestructedGateDefinition,
+
+    inputs: Vec<SimGateInputEntry>,
+    outputs: Vec<SimGateOutputEntry>,
 }
 
-/// an IO entry struct that contains the handle to the Data
-/// and the buffer the data is to be fetched from/put onto
-/// buffer_id is none if it is not connected to an input/output wire for that gate IO
-struct SimGateIOEntry {
-    pub handle: Rc<DestructedData>,
-    pub buffer_id: Option<ComponentId>,
+#[derive(Clone)]
+pub enum SimGateInputEntry {
+    Unbound {
+        handle: Rc<DestructedData>,
+    },
+    Bound {
+        handle: Rc<DestructedData>,
+        source_buffer: ComponentId,
+    },
+}
+
+#[derive(Clone)]
+pub struct SimGateOutputEntry {
+    handle: Rc<DestructedData>,
+    target_buffer: Option<ComponentId>,
 }
 
 impl SimGate {
@@ -35,41 +46,55 @@ impl SimGate {
         world_data: &WorldStateData,
     ) -> Result<Self, sim::Error> {
         let gate_ptr = handle.default_value();
-        let definition = handle.normalised_definition(gate_ptr);
-
-        fn to_simgate_io_entries(
-            destructed_io_entries: Vec<DestructedGateIOEntry>,
-            world_data: &WorldStateData,
-        ) -> Result<Vec<SimGateIOEntry>, sim::Error> {
-            let mut simgate_io_entries = Vec::with_capacity(destructed_io_entries.len());
-            for DestructedGateIOEntry {
-                data_type,
-                name: _,
-                position: _,
-            } in destructed_io_entries
-            {
-                let data_type = data_type.into_minor();
-                simgate_io_entries.push(SimGateIOEntry {
-                    handle: match world_data.get_handle(&data_type) {
-                        Some(destructed_lib) => destructed_lib.clone(),
-                        None => {
-                            return Err(sim::Error::MissingDataType {
-                                data_ident: data_type,
-                            });
-                        }
-                    },
-                    buffer_id: None,
+        let definition = match handle.normalised_definition(gate_ptr) {
+            Ok(def) => def,
+            Err(e) => {
+                return Err(sim::Error::GateDefinition {
+                    component: handle.id().clone(),
+                    reason: format!("{e:?}"),
                 });
             }
+        };
 
-            Ok(simgate_io_entries)
+        let mut inputs = Vec::with_capacity(definition.inputs.len());
+
+        for entry in definition.inputs.iter() {
+            match world_data.request_handle(&entry.data_type_req) {
+                Some(data_type) => inputs.push(SimGateInputEntry::Unbound {
+                    handle: data_type.clone(),
+                }),
+                None => {
+                    return Err(sim::Error::MissingDataType {
+                        requested_type: entry.data_type_req.to_string(),
+                    });
+                }
+            }
+        }
+
+        let mut outputs = Vec::with_capacity(definition.outputs.len());
+
+        for entry in definition.outputs.iter() {
+            match world_data.get_handle(&entry.data_type) {
+                Some(data_type) => outputs.push(SimGateOutputEntry {
+                    handle: data_type.clone(),
+                    target_buffer: None,
+                }),
+                None => {
+                    return Err(sim::Error::MissingDataType {
+                        requested_type: entry.data_type.to_string(),
+                    });
+                }
+            }
         }
 
         Ok(Self {
-            input_sources: to_simgate_io_entries(definition.inputs, world_data)?,
-            output_targets: to_simgate_io_entries(definition.outputs, world_data)?,
             gate_ptr,
             handle,
+
+            inputs,
+            outputs,
+
+            definition,
         })
     }
 
@@ -95,13 +120,18 @@ impl SimGate {
         // creates the array of pointers to input data
         // (is it possible to reduce the amount of cloning here?)
         let input_slice = slice::from_vec_rustonly(
-            self.input_sources
+            self.inputs
                 .iter()
-                .map(|SimGateIOEntry { handle, buffer_id }| match buffer_id {
-                    Some(buffer_id) => match world_data.read_buffer(buffer_id) {
+                .map(|input| match input {
+                    SimGateInputEntry::Bound {
+                        handle,
+                        source_buffer,
+                    } => match world_data.read_buffer(source_buffer) {
                         Some(data) => unsafe { data.get_data_ptr() },
                         None => {
-                            missing_data.push(*buffer_id);
+                            missing_data.push(*source_buffer);
+
+                            // if buffer not in world, treat as unbound
                             let data_ptr = handle.default_value();
                             temp_data_ptrs.push(TempData {
                                 ptr: data_ptr,
@@ -110,7 +140,7 @@ impl SimGate {
                             data_ptr as DataPtr
                         }
                     },
-                    None => {
+                    SimGateInputEntry::Unbound { handle } => {
                         let data_ptr = handle.default_value();
                         temp_data_ptrs.push(TempData {
                             ptr: data_ptr,
@@ -132,9 +162,15 @@ impl SimGate {
 
         slice::from_slice::<DataPtrMut>(&output_slice)
             .iter()
-            .zip(self.output_targets.iter())
+            .zip(self.outputs.iter())
             .for_each(
-                |(data, SimGateIOEntry { handle, buffer_id })| match buffer_id {
+                |(
+                    data,
+                    SimGateOutputEntry {
+                        handle,
+                        target_buffer,
+                    },
+                )| match target_buffer {
                     Some(output_target) => {
                         world_data.write_buffer(
                             *output_target,

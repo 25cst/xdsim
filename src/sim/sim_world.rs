@@ -1,7 +1,9 @@
 use std::{collections::HashMap, mem, rc::Rc};
 
+use semver::Version;
+
 use crate::{
-    common::world::{ComponentId, ComponentLibMinorId},
+    common::world::{ComponentId, ComponentVersion, ComponentVersionReq},
     packages::destructor::{DestructedData, DestructedGate},
     sim::{
         self,
@@ -33,11 +35,16 @@ impl WorldState {
     }
 }
 
+type PackageName = String;
+type PackageVersion = Version;
+type ComponentName = String;
+
 pub struct WorldStateData {
     /// all data types
     // may one day replace the Rc in SimData with a dumb pointer because it is guaranteed to exist
     // as owned here
-    handles: HashMap<ComponentLibMinorId, Rc<DestructedData>>,
+    handles:
+        HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedData>>>>,
 
     /// all buffers that have content
     /// the componentID is the connections holding the data
@@ -46,8 +53,25 @@ pub struct WorldStateData {
 }
 
 impl WorldStateData {
-    pub fn get_handle(&self, data_lib_ident: &ComponentLibMinorId) -> Option<&Rc<DestructedData>> {
-        self.handles.get(data_lib_ident)
+    /// Get handle using a ComponentVersion
+    pub fn get_handle(&self, component: &ComponentVersion) -> Option<&Rc<DestructedData>> {
+        self.handles
+            .get(&component.package)?
+            .get(&component.version)?
+            .get(&component.component)
+    }
+
+    /// Get handle using a ComponentVersionReq
+    pub fn request_handle(
+        &self,
+        component_req: &ComponentVersionReq,
+    ) -> Option<&Rc<DestructedData>> {
+        self.handles
+            .get(&component_req.package)?
+            .iter()
+            .find(|(version, _)| component_req.version_req.matches(version))?
+            .1
+            .get(&component_req.component)
     }
 
     /// read from current world state
@@ -69,7 +93,7 @@ impl WorldStateData {
 
 pub struct WorldStateGates {
     /// all gate types
-    handles: HashMap<ComponentLibMinorId, Rc<DestructedGate>>,
+    handles: HashMap<ComponentVersion, Rc<DestructedGate>>,
 
     /// all gates in world
     gates: HashMap<ComponentId, SimGate>,

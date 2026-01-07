@@ -1,14 +1,18 @@
-use crate::common::world::{ComponentId, ComponentLibMinorId};
+use crate::common::world::{ComponentId, ComponentVersion};
 
 pub enum Error {
     /// Missing data in world
     MissingData { component_ids: Vec<ComponentId> },
     /// Missing data type in world
-    MissingDataType { data_ident: ComponentLibMinorId },
+    MissingDataType { requested_type: String },
     /// Single error emitted by tick_all
     /// as of now, tick_all only emits
     /// - MissingData
     TickallErrors { errors: Vec<TickAllErrorEntry> },
+    GateDefinition {
+        component: ComponentVersion,
+        reason: String,
+    },
 }
 
 pub struct TickAllErrorEntry {

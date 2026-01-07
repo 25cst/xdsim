@@ -1,19 +1,24 @@
 use std::path::PathBuf;
 
-use crate::packages::loader;
+use crate::{common::world::ComponentVersion, packages::loader};
 
+#[derive(Debug)]
 pub enum Error {
+    /// GetSymbol error when loading library
     GetSymbol {
         reason: String,
         symbol_name: String,
         lib_path: PathBuf,
     },
-    UnexpectedType {
-        expected: &'static str,
-        got: String,
-    },
-    UnsupportedSchemaVersion {
-        version: u32,
+    /// Implementation error: except one type of error only but got another
+    UnexpectedType { expected: &'static str, got: String },
+    /// Definition schema not supported
+    UnsupportedSchemaVersion { version: u32 },
+    /// Version request cannot be parsed (because of invalid format)
+    InvalidVersionReq {
+        component: Box<ComponentVersion>, // to avoid err variant being too large
+        version: String,
+        reason: String,
     },
 }
 
