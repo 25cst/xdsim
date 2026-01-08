@@ -9,6 +9,7 @@ pub enum Error {
     /// as of now, tick_all only emits
     /// - MissingData
     TickallErrors { errors: Vec<TickAllErrorEntry> },
+    /// Error parsing gate definition
     GateDefinition {
         component: ComponentVersion,
         reason: String,

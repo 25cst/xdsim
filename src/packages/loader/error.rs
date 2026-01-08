@@ -21,24 +21,17 @@ pub enum Error {
         lib_path: PathBuf,
     },
     /// Missing package from index
-    MissingPackage {
-        name: String,
-    },
+    MissingPackage { name: String },
     /// Missing package version from index
-    MissingPackageVersion {
-        name: String,
-        version: Version,
-    },
-    LoadAllComponentPackages {
-        errors: Vec<Self>,
-    },
+    MissingPackageVersion { name: String, version: Version },
+    /// Error when loading all requested component packages
+    LoadAllComponentPackages { errors: Vec<Self> },
+    /// An error caused by the destructor
+    /// part of DestructAllComponentPackages
     #[allow(clippy::enum_variant_names)]
-    DestructorError {
-        content: String,
-    },
-    DestructAllComponentPackages {
-        errors: Vec<Self>,
-    },
+    DestructorError { content: String },
+    /// Error when destructing loaded packages
+    DestructAllComponentPackages { errors: Vec<Self> },
 }
 
 impl Display for Error {

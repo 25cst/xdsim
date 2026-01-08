@@ -97,6 +97,8 @@ impl IndexComponentLoader {
             loaded_index.insert(package_name.clone(), package_map);
         }
 
+        /// maintain the structure of the hashmap (includes empty entries)
+        /// extract a map for a component from the loaded index
         fn destruct_component<T>(
             destruct: fn(DestructRequest) -> Result<T, destructor::Error>,
             variant: PackageComponentType,
