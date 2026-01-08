@@ -17,19 +17,19 @@ impl DestructedData {
         Ok(Self {
             serialize: *request
                 .get_library()
-                .get_symbol("data_serialize", request.get_path())
+                .get_symbol("data_serialize")
                 .map_err(destructor::Error::from_get_symbol)?,
             deserialize: *request
                 .get_library()
-                .get_symbol("data_deserialize", request.get_path())
+                .get_symbol("data_deserialize")
                 .map_err(destructor::Error::from_get_symbol)?,
             default_value: *request
                 .get_library()
-                .get_symbol("data_default", request.get_path())
+                .get_symbol("data_default")
                 .map_err(destructor::Error::from_get_symbol)?,
             drop_mem: *request
                 .get_library()
-                .get_symbol("data_drop", request.get_path())
+                .get_symbol("data_drop")
                 .map_err(destructor::Error::from_get_symbol)?,
         })
     }

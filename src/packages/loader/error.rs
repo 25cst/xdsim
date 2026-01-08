@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf};
 
 use semver::Version;
 
@@ -32,6 +32,19 @@ pub enum Error {
     LoadAllComponentPackages {
         errors: Vec<Self>,
     },
+    #[allow(clippy::enum_variant_names)]
+    DestructorError {
+        content: String,
+    },
+    DestructAllComponentPackages {
+        errors: Vec<Self>,
+    },
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{self:?}"))
+    }
 }
 
 impl Error {

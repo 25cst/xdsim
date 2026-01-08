@@ -51,7 +51,7 @@ impl SimGate {
             Err(e) => {
                 return Err(sim::Error::GateDefinition {
                     component: handle.id().clone(),
-                    reason: format!("{e:?}"),
+                    reason: e.to_string(),
                 });
             }
         };

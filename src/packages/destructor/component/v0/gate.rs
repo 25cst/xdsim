@@ -31,35 +31,35 @@ impl DestructedGate {
         Ok(Self {
             tick: *request
                 .get_library()
-                .get_symbol("gate_tick", request.get_path())
+                .get_symbol("gate_tick")
                 .map_err(destructor::Error::from_get_symbol)?,
             draw: *request
                 .get_library()
-                .get_symbol("gate_draw", request.get_path())
+                .get_symbol("gate_draw")
                 .map_err(destructor::Error::from_get_symbol)?,
             definition: *request
                 .get_library()
-                .get_symbol("gate_def", request.get_path())
+                .get_symbol("gate_def")
                 .map_err(destructor::Error::from_get_symbol)?,
             properties: *request
                 .get_library()
-                .get_symbol("gate_props", request.get_path())
+                .get_symbol("gate_props")
                 .map_err(destructor::Error::from_get_symbol)?,
             serialize: *request
                 .get_library()
-                .get_symbol("gate_serialize", request.get_path())
+                .get_symbol("gate_serialize")
                 .map_err(destructor::Error::from_get_symbol)?,
             deserialize: *request
                 .get_library()
-                .get_symbol("gate_deserialize", request.get_path())
+                .get_symbol("gate_deserialize")
                 .map_err(destructor::Error::from_get_symbol)?,
             default_value: *request
                 .get_library()
-                .get_symbol("gate_default", request.get_path())
+                .get_symbol("gate_default")
                 .map_err(destructor::Error::from_get_symbol)?,
             drop_mem: *request
                 .get_library()
-                .get_symbol("gate_drop", request.get_path())
+                .get_symbol("gate_drop")
                 .map_err(destructor::Error::from_get_symbol)?,
         })
     }

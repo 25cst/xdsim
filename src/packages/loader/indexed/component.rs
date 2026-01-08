@@ -1,10 +1,14 @@
-use std::{collections::HashMap, env::consts::DLL_EXTENSION};
+use std::{collections::HashMap, env::consts::DLL_EXTENSION, path::PathBuf, rc::Rc};
 
 use semver::Version;
 
-use crate::packages::{
-    indexer::{self, component::PackageComponentType},
-    loader::{self, LibraryHandle, manager::LoadManager},
+use crate::{
+    common::world::ComponentVersion,
+    packages::{
+        destructor::{self, DestructRequest, DestructedData, DestructedGate},
+        indexer::{self, component::PackageComponentType},
+        loader::{self, LibraryHandle, manager::LoadManager},
+    },
 };
 
 type PackageName = String;
@@ -14,13 +18,15 @@ type LibName = String;
 struct LoadedEntry {
     pub variant: PackageComponentType,
     pub handle: LibraryHandle,
+    pub path: PathBuf,
 }
 
 /// library loading utility for situations where:
 /// - you are trying to load component packages
 /// - you already have an index of the packages
 pub struct IndexComponentLoader {
-    handles: HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, LoadedEntry>>>,
+    gates: HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, Rc<DestructedGate>>>>,
+    data: HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, Rc<DestructedData>>>>,
 }
 
 impl IndexComponentLoader {
@@ -67,7 +73,7 @@ impl IndexComponentLoader {
                 for (name, variant) in libs_to_load {
                     let lib_path = version_root.join(name).with_extension(DLL_EXTENSION);
 
-                    let lib = match LoadManager::load_with_path(&lib_path) {
+                    let lib = match LoadManager::load_with_path(lib_path.clone()) {
                         Ok(loaded) => loaded,
                         Err(e) => {
                             errors.push(e);
@@ -80,6 +86,7 @@ impl IndexComponentLoader {
                         LoadedEntry {
                             variant: *variant,
                             handle: lib,
+                            path: lib_path,
                         },
                     );
                 }
@@ -90,10 +97,79 @@ impl IndexComponentLoader {
             loaded_index.insert(package_name.clone(), package_map);
         }
 
+        fn destruct_component<T>(
+            destruct: fn(DestructRequest) -> Result<T, destructor::Error>,
+            variant: PackageComponentType,
+            index: &HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, LoadedEntry>>>,
+            errors: &mut Vec<loader::Error>,
+        ) -> HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, Rc<T>>>> {
+            index
+                .iter()
+                .map(|(package_name, versions)| {
+                    (
+                        package_name.clone(),
+                        versions
+                            .iter()
+                            .map(|(version_name, version_content)| {
+                                (
+                                    version_name.clone(),
+                                    version_content
+                                        .iter()
+                                        .filter_map(|(lib_name, lib_content)| {
+                                            if lib_content.variant == variant {
+                                                let destruct_request = DestructRequest::new(
+                                                    lib_content.handle.clone(),
+                                                    ComponentVersion {
+                                                        package: package_name.clone(),
+                                                        version: version_name.clone(),
+                                                        component: lib_name.clone(),
+                                                    },
+                                                );
+
+                                                match destruct(destruct_request) {
+                                                    Ok(destructed) => Some((
+                                                        lib_name.clone(),
+                                                        Rc::new(destructed),
+                                                    )),
+                                                    Err(e) => {
+                                                        errors.push(
+                                                            loader::Error::DestructorError {
+                                                                content: e.to_string(),
+                                                            },
+                                                        );
+
+                                                        None
+                                                    }
+                                                }
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                        .collect::<HashMap<_, _>>(),
+                                )
+                            })
+                            .collect::<HashMap<_, _>>(),
+                    )
+                })
+                .collect::<HashMap<_, _>>()
+        }
+
+        let gates = destruct_component(
+            DestructedGate::new,
+            PackageComponentType::Gate,
+            &loaded_index,
+            &mut errors,
+        );
+        let data = destruct_component(
+            DestructedData::new,
+            PackageComponentType::Data,
+            &loaded_index,
+            &mut errors,
+        );
+        // TODO: destruct connections
+
         if errors.is_empty() {
-            Ok(Self {
-                handles: loaded_index,
-            })
+            Ok(Self { gates, data })
         } else {
             Err(loader::Error::LoadAllComponentPackages { errors })
         }

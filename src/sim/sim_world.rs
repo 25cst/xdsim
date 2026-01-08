@@ -93,7 +93,8 @@ impl WorldStateData {
 
 pub struct WorldStateGates {
     /// all gate types
-    handles: HashMap<ComponentVersion, Rc<DestructedGate>>,
+    handles:
+        HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedGate>>>>,
 
     /// all gates in world
     gates: HashMap<ComponentId, SimGate>,

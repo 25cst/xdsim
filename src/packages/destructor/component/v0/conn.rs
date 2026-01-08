@@ -24,31 +24,31 @@ impl DestructedConnection {
         Ok(Self {
             draw: *request
                 .get_library()
-                .get_symbol("conn_draw", request.get_path())
+                .get_symbol("conn_draw")
                 .map_err(destructor::Error::from_get_symbol)?,
             definition: *request
                 .get_library()
-                .get_symbol("conn_def", request.get_path())
+                .get_symbol("conn_def")
                 .map_err(destructor::Error::from_get_symbol)?,
             properties: *request
                 .get_library()
-                .get_symbol("conn_props", request.get_path())
+                .get_symbol("conn_props")
                 .map_err(destructor::Error::from_get_symbol)?,
             serialize: *request
                 .get_library()
-                .get_symbol("conn_serialize", request.get_path())
+                .get_symbol("conn_serialize")
                 .map_err(destructor::Error::from_get_symbol)?,
             deserialize: *request
                 .get_library()
-                .get_symbol("conn_deserialize", request.get_path())
+                .get_symbol("conn_deserialize")
                 .map_err(destructor::Error::from_get_symbol)?,
             default_value: *request
                 .get_library()
-                .get_symbol("conn_default", request.get_path())
+                .get_symbol("conn_default")
                 .map_err(destructor::Error::from_get_symbol)?,
             drop_mem: *request
                 .get_library()
-                .get_symbol("conn_drop", request.get_path())
+                .get_symbol("conn_drop")
                 .map_err(destructor::Error::from_get_symbol)?,
         })
     }

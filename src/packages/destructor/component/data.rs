@@ -24,7 +24,7 @@ impl DestructedData {
     pub fn new(request: DestructRequest) -> Result<Self, destructor::Error> {
         let get_schema_version: fn() -> u32 = *request
             .get_library()
-            .get_symbol("schema_version", request.get_path())
+            .get_symbol("schema_version")
             .map_err(destructor::Error::from_get_symbol)?;
 
         let handle = match get_schema_version() {

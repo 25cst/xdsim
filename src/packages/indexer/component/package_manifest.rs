@@ -41,7 +41,7 @@ pub struct PackageInfo {
     pub version: Version,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "devel", derive(Debug))]
 pub enum PackageComponentType {
     #[serde(rename = "gate")]

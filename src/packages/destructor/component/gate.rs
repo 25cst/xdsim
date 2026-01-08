@@ -48,13 +48,10 @@ pub enum DestructedGateHandle {
 }
 
 impl DestructedGate {
-    pub fn new(
-        request: DestructRequest,
-        gate_id: ComponentVersion,
-    ) -> Result<Self, destructor::Error> {
+    pub fn new(request: DestructRequest) -> Result<Self, destructor::Error> {
         let get_schema_version: fn() -> u32 = *request
             .get_library()
-            .get_symbol("schema_version", request.get_path())
+            .get_symbol("schema_version")
             .map_err(destructor::Error::from_get_symbol)?;
 
         let handle = match get_schema_version() {
@@ -67,8 +64,8 @@ impl DestructedGate {
         };
 
         Ok(Self {
+            id: request.get_component_id().clone(),
             _library: request.into_library(),
-            id: gate_id,
             handle,
         })
     }

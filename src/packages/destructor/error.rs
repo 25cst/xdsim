@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf};
 
 use crate::{common::world::ComponentVersion, packages::loader};
 
@@ -22,6 +22,12 @@ pub enum Error {
     },
 }
 
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{self:?}"))
+    }
+}
+
 impl Error {
     pub fn from_get_symbol(error: loader::Error) -> Self {
         match error {
@@ -36,7 +42,7 @@ impl Error {
             },
             e => Self::UnexpectedType {
                 expected: "GetSymbol",
-                got: format!("{e:?}"),
+                got: e.to_string(),
             },
         }
     }
