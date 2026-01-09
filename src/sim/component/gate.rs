@@ -6,7 +6,7 @@ use crate::{
         chelper::slice,
         destructor::{DestructedData, DestructedGate, DestructedGateDefinition},
     },
-    sim::{self, component::SimData, sim_world::WorldStateData},
+    sim::{self, component::SimData, world::WorldStateData},
 };
 
 /// A single gate

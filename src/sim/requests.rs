@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::sim::sim_world::{DestructedDataHandles, DestructedGateHandles};
+use crate::{
+    common::world::ComponentVersion,
+    sim::world::{DestructedDataHandles, DestructedGateHandles},
+};
 
 /// WorldState::new_blank(CreateBlankWorld)
 pub struct CreateBlankWorld {
@@ -14,5 +17,15 @@ impl CreateBlankWorld {
             data_handles: HashMap::new(),
             gate_handles: HashMap::new(),
         }
+    }
+}
+
+pub struct CreateDefaultGate {
+    pub gate: ComponentVersion,
+}
+
+impl CreateDefaultGate {
+    pub fn new(gate: ComponentVersion) -> Self {
+        Self { gate }
     }
 }

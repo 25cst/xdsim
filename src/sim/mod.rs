@@ -8,5 +8,5 @@
 mod component;
 mod error;
 mod requests;
-mod sim_world;
+mod world;
 pub use error::Error;
