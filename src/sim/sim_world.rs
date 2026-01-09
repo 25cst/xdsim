@@ -9,6 +9,7 @@ use crate::{
         self,
         component::{SimData, SimGate},
         error::TickAllErrorEntry,
+        requests::CreateBlankWorld,
     },
 };
 
@@ -19,6 +20,14 @@ pub struct WorldState {
 }
 
 impl WorldState {
+    /// create new empty world with library handles to gates and data
+    pub fn new_blank(request: CreateBlankWorld) -> Self {
+        Self {
+            data: WorldStateData::new_blank(request.data_handles),
+            gates: WorldStateGates::new_blank(request.gate_handles),
+        }
+    }
+
     /// tick the current world
     /// if this function returns error, its not end of the world
     /// it just means a buffer is used as input to a gate, but is not present
@@ -35,16 +44,20 @@ impl WorldState {
     }
 }
 
-type PackageName = String;
-type PackageVersion = Version;
-type ComponentName = String;
+pub type PackageName = String;
+pub type PackageVersion = Version;
+pub type ComponentName = String;
+
+pub type DestructedDataHandles =
+    HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedData>>>>;
+pub type DestructedGateHandles =
+    HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedGate>>>>;
 
 pub struct WorldStateData {
     /// all data types
     // may one day replace the Rc in SimData with a dumb pointer because it is guaranteed to exist
     // as owned here
-    handles:
-        HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedData>>>>,
+    handles: DestructedDataHandles,
 
     /// all buffers that have content
     /// the componentID is the connections holding the data
@@ -53,6 +66,15 @@ pub struct WorldStateData {
 }
 
 impl WorldStateData {
+    /// create world state data with only handles and no buffers in world
+    pub fn new_blank(handles: DestructedDataHandles) -> Self {
+        Self {
+            handles,
+            readonly: HashMap::new(),
+            writeonly: HashMap::new(),
+        }
+    }
+
     /// Get handle using a ComponentVersion
     pub fn get_handle(&self, component: &ComponentVersion) -> Option<&Rc<DestructedData>> {
         self.handles
@@ -93,14 +115,21 @@ impl WorldStateData {
 
 pub struct WorldStateGates {
     /// all gate types
-    handles:
-        HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedGate>>>>,
+    handles: DestructedGateHandles,
 
     /// all gates in world
     gates: HashMap<ComponentId, SimGate>,
 }
 
 impl WorldStateGates {
+    /// create world state gates with only handles and no gates in world
+    pub fn new_blank(handles: DestructedGateHandles) -> Self {
+        Self {
+            handles,
+            gates: HashMap::new(),
+        }
+    }
+
     // strictly speaking the compiler doesnt require this to SimGate::tick to be mut
     // but I've marked it as so because it would make sense
     // if it is causing trouble, we can remove it

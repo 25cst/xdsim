@@ -15,6 +15,11 @@ type PackageName = String;
 type PackageVersion = Version;
 type LibName = String;
 
+type DestructedGateHandles =
+    HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, Rc<DestructedGate>>>>;
+type DestructedDataHandles =
+    HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, Rc<DestructedData>>>>;
+
 struct LoadedEntry {
     pub variant: PackageComponentType,
     pub handle: LibraryHandle,
@@ -24,9 +29,12 @@ struct LoadedEntry {
 /// library loading utility for situations where:
 /// - you are trying to load component packages
 /// - you already have an index of the packages
+///
+/// fields are public, for convenience of destructing:
+/// the struct can only be created, it does not have any self referencing functions
 pub struct IndexComponentLoader {
-    gates: HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, Rc<DestructedGate>>>>,
-    data: HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, Rc<DestructedData>>>>,
+    pub gates: DestructedGateHandles,
+    pub data: DestructedDataHandles,
 }
 
 impl IndexComponentLoader {

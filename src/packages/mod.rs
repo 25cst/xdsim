@@ -1,4 +1,4 @@
 pub mod chelper;
 pub mod destructor;
-mod indexer;
-mod loader;
+pub mod indexer;
+pub mod loader;
