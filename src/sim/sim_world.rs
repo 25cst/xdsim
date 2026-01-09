@@ -1,4 +1,8 @@
-use std::{collections::HashMap, mem, rc::Rc};
+use std::{
+    collections::{HashMap, HashSet},
+    mem,
+    rc::Rc,
+};
 
 use semver::Version;
 
@@ -119,6 +123,20 @@ pub struct WorldStateGates {
 
     /// all gates in world
     gates: HashMap<ComponentId, SimGate>,
+
+    /// For a buffer, which gates are using that buffer as input?
+    /// Map<Buffer ID, Gate IDs>
+    ///
+    /// Constraints:
+    /// - The gate IDs must exist in Self.gates
+    gates_with_input: HashMap<ComponentId, HashSet<ComponentId>>,
+
+    /// For a buffer, what is the gate outputing to the buffer?
+    /// Map<Buffer ID, Gate ID>
+    ///
+    /// Constraints:
+    /// - The gate IDs must exist in Self.gates
+    gate_with_output: HashMap<ComponentId, ComponentId>,
 }
 
 impl WorldStateGates {
@@ -127,6 +145,8 @@ impl WorldStateGates {
         Self {
             handles,
             gates: HashMap::new(),
+            gates_with_input: HashMap::new(),
+            gate_with_output: HashMap::new(),
         }
     }
 
