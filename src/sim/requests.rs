@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::sim::sim_world::{DestructedDataHandles, DestructedGateHandles};
 
+/// WorldState::new_blank(CreateBlankWorld)
 pub struct CreateBlankWorld {
     pub data_handles: DestructedDataHandles,
     pub gate_handles: DestructedGateHandles,
