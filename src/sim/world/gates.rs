@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    common::world::ComponentId,
+    common::world::{ComponentId, ComponentIdIncrementer, ComponentVersion},
     packages::destructor::DestructedGate,
     sim::{self, component::SimGate, error::TickAllErrorEntry, world::*},
 };
@@ -43,6 +43,35 @@ impl WorldStateGates {
             gates_with_input: HashMap::new(),
             gate_with_output: HashMap::new(),
         }
+    }
+
+    /// create a new gate in world
+    pub fn create_gate(
+        &mut self,
+        gate: ComponentVersion,
+        world_data: &WorldStateData,
+        id_counter: &mut ComponentIdIncrementer,
+    ) -> Result<ComponentId, sim::Error> {
+        fn get_handle<'a>(
+            handles: &'a DestructedGateHandles,
+            gate: &ComponentVersion,
+        ) -> Option<&'a Rc<DestructedGate>> {
+            handles
+                .get(&gate.package)?
+                .get(&gate.version)?
+                .get(&gate.component)
+        }
+
+        let handle = match get_handle(&self.handles, &gate) {
+            Some(found) => found,
+            None => return Err(sim::Error::MissingGateType { gate_type: gate }),
+        };
+
+        let created_gate = SimGate::new_default(handle.clone(), world_data)?;
+        let new_gate_id = id_counter.get();
+
+        self.gates.insert(new_gate_id, created_gate);
+        Ok(new_gate_id)
     }
 
     // strictly speaking the compiler doesnt require this to SimGate::tick to be mut

@@ -64,8 +64,8 @@ impl SimGate {
                     handle: data_type.clone(),
                 }),
                 None => {
-                    return Err(sim::Error::MissingDataType {
-                        requested_type: entry.data_type_req.to_string(),
+                    return Err(sim::Error::MissingRequestedDataType {
+                        data_type: entry.data_type_req.clone(),
                     });
                 }
             }
@@ -81,7 +81,7 @@ impl SimGate {
                 }),
                 None => {
                     return Err(sim::Error::MissingDataType {
-                        requested_type: entry.data_type.to_string(),
+                        data_type: entry.data_type.clone(),
                     });
                 }
             }

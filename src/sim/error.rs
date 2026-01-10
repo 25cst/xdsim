@@ -1,10 +1,14 @@
-use crate::common::world::{ComponentId, ComponentVersion};
+use crate::common::world::{ComponentId, ComponentVersion, ComponentVersionReq};
 
 pub enum Error {
     /// Missing data in world
     MissingData { component_ids: Vec<ComponentId> },
-    /// Missing data type in world
-    MissingDataType { requested_type: String },
+    /// Missing data type in world (requested with semver)
+    MissingDataType { data_type: ComponentVersion },
+    /// Missing data type in world (requested with a semver pattern)
+    MissingRequestedDataType { data_type: ComponentVersionReq },
+    /// Missing gate type in world (requested with semver)
+    MissingGateType { gate_type: ComponentVersion },
     /// Single error emitted by tick_all
     /// as of now, tick_all only emits
     /// - MissingData
