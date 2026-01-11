@@ -22,4 +22,10 @@ impl ComponentIdIncrementer {
         self.content.increment();
         self.content
     }
+
+    pub fn zero() -> Self {
+        Self {
+            content: ComponentId::new(0),
+        }
+    }
 }

@@ -1,9 +1,12 @@
 use semver::Version;
 
-use crate::sim::{
-    self,
-    requests::CreateBlankWorld,
-    world::{data::WorldStateData, gates::WorldStateGates},
+use crate::{
+    common::world::{ComponentId, ComponentIdIncrementer},
+    sim::{
+        self,
+        requests::{CreateBlankWorld, CreateDefaultGate},
+        world::{data::WorldStateData, gates::WorldStateGates},
+    },
 };
 
 pub type PackageName = String;
@@ -14,6 +17,7 @@ pub type ComponentName = String;
 pub struct WorldState {
     data: WorldStateData,
     gates: WorldStateGates,
+    id_counter: ComponentIdIncrementer,
 }
 
 impl WorldState {
@@ -22,7 +26,16 @@ impl WorldState {
         Self {
             data: WorldStateData::new_blank(request.data_handles),
             gates: WorldStateGates::new_blank(request.gate_handles),
+            id_counter: ComponentIdIncrementer::zero(),
         }
+    }
+
+    pub fn create_default_gate(
+        &mut self,
+        request: CreateDefaultGate,
+    ) -> Result<ComponentId, sim::Error> {
+        self.gates
+            .create_default_gate(request.gate, &self.data, &mut self.id_counter)
     }
 
     /// tick the current world

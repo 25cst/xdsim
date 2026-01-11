@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::{
-    common::world::{ComponentId, DataPtr, DataPtrMut, GatePtrMut},
+    common::world::{ComponentId, ComponentIdIncrementer, DataPtr, DataPtrMut, GatePtrMut},
     packages::{
         chelper::slice,
         destructor::{DestructedData, DestructedGate, DestructedGateDefinition},
@@ -96,6 +96,95 @@ impl SimGate {
 
             definition,
         })
+    }
+
+    /// - Registers a new output (thus creating a never-before-existed buffer)
+    /// - By index: the index of the output in the definition array
+    pub fn register_new_output_by_index(
+        &mut self,
+        output_index: usize,
+        self_id: &ComponentId,
+        id_counter: &mut ComponentIdIncrementer,
+    ) -> Result<ComponentId, sim::Error> {
+        match self.outputs.get_mut(output_index) {
+            Some(entry) => match entry.target_buffer {
+                Some(_) => Err(sim::Error::GateOutputDoubleRegister {
+                    gate_type: self.handle.id().clone(),
+                    gate_id: *self_id,
+                    requested_index: output_index,
+                }),
+                None => {
+                    let target_id = id_counter.get();
+                    entry.target_buffer = Some(target_id);
+                    Ok(target_id)
+                }
+            },
+            None => Err(sim::Error::GateOutputIndexOutOfBounds {
+                gate_type: self.handle.id().clone(),
+                gate_id: *self_id,
+                output_list_length: self.outputs.len(),
+                requested_index: output_index,
+            }),
+        }
+    }
+
+    /// DANGER! The output id is not checked, if it does not exist the output will not be used
+    ///
+    /// - Registers an output given a buffer id (outputs to an existing buffer)
+    /// - By index: the index of the output in the definition array
+    pub fn register_existing_output_by_index(
+        &mut self,
+        output_index: usize,
+        self_id: &ComponentId,
+        output_id: ComponentId,
+    ) -> Result<(), sim::Error> {
+        match self.outputs.get_mut(output_index) {
+            Some(entry) => match entry.target_buffer {
+                Some(_) => Err(sim::Error::GateOutputDoubleRegister {
+                    gate_type: self.handle.id().clone(),
+                    gate_id: *self_id,
+                    requested_index: output_index,
+                }),
+                None => {
+                    entry.target_buffer = Some(output_id);
+                    Ok(())
+                }
+            },
+            None => Err(sim::Error::GateOutputIndexOutOfBounds {
+                gate_type: self.handle.id().clone(),
+                gate_id: *self_id,
+                output_list_length: self.outputs.len(),
+                requested_index: output_index,
+            }),
+        }
+    }
+
+    /// - Unregister an output: the output is not longer connected to a buffer
+    /// - By index: the index of the output in the definition array
+    pub fn unregister_output_by_index(
+        &mut self,
+        output_index: usize,
+        self_id: &ComponentId,
+    ) -> Result<(), sim::Error> {
+        match self.outputs.get_mut(output_index) {
+            Some(entry) => match entry.target_buffer {
+                Some(_) => {
+                    entry.target_buffer = None;
+                    Ok(())
+                }
+                None => Err(sim::Error::GateOutputUnregisterNothing {
+                    gate_type: self.handle.id().clone(),
+                    gate_id: *self_id,
+                    requested_index: output_index,
+                }),
+            },
+            None => Err(sim::Error::GateOutputIndexOutOfBounds {
+                gate_type: self.handle.id().clone(),
+                gate_id: *self_id,
+                output_list_length: self.outputs.len(),
+                requested_index: output_index,
+            }),
+        }
     }
 
     /// if this function returns an error

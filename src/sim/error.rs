@@ -18,6 +18,25 @@ pub enum Error {
         component: ComponentVersion,
         reason: String,
     },
+    /// Requests gate output by index but out of bounds
+    GateOutputIndexOutOfBounds {
+        gate_type: ComponentVersion,
+        gate_id: ComponentId,
+        output_list_length: usize,
+        requested_index: usize,
+    },
+    /// Registering an output for a gate when it is already registered to an output
+    GateOutputDoubleRegister {
+        gate_type: ComponentVersion,
+        gate_id: ComponentId,
+        requested_index: usize,
+    },
+    /// Unregisters an output, but it is not registered in the first place
+    GateOutputUnregisterNothing {
+        gate_type: ComponentVersion,
+        gate_id: ComponentId,
+        requested_index: usize,
+    },
 }
 
 pub struct TickAllErrorEntry {

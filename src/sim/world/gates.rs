@@ -45,8 +45,8 @@ impl WorldStateGates {
         }
     }
 
-    /// create a new gate in world
-    pub fn create_gate(
+    /// create a new gate in world with default state
+    pub fn create_default_gate(
         &mut self,
         gate: ComponentVersion,
         world_data: &WorldStateData,
