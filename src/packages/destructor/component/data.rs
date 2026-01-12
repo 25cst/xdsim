@@ -1,7 +1,7 @@
 use xdsim_cbinds::common::Slice;
 
 use crate::{
-    common::world::{DataPtr, DataPtrMut},
+    common::world::{ComponentVersion, DataPtr, DataPtrMut},
     packages::{
         destructor::{self, DestructRequest, component::v0},
         loader::LibraryHandle,
@@ -13,7 +13,14 @@ use crate::{
 /// Note: a copy of library is held for the functions to remain valid
 pub struct DestructedData {
     _library: LibraryHandle,
+    id: ComponentVersion,
     handle: DestructedDataHandle,
+}
+
+impl DestructedData {
+    pub fn id(&self) -> &ComponentVersion {
+        &self.id
+    }
 }
 
 pub enum DestructedDataHandle {
@@ -37,6 +44,7 @@ impl DestructedData {
         };
 
         Ok(Self {
+            id: request.get_component_id().clone(),
             _library: request.into_library(),
             handle,
         })

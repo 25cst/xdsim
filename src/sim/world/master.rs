@@ -4,7 +4,7 @@ use crate::{
     common::world::{ComponentId, ComponentIdIncrementer},
     sim::{
         self,
-        requests::{CreateBlankWorld, CreateDefaultGate},
+        requests::{CreateBlankWorld, CreateDefaultGate, RegisterNewGateOutputByIndex},
         world::{data::WorldStateData, gates::WorldStateGates},
     },
 };
@@ -30,12 +30,26 @@ impl WorldState {
         }
     }
 
+    /// Create a new gate in world with default state
     pub fn create_default_gate(
         &mut self,
         request: CreateDefaultGate,
-    ) -> Result<ComponentId, sim::Error> {
+    ) -> Result<ComponentId, Box<sim::Error>> {
         self.gates
             .create_default_gate(request.gate, &self.data, &mut self.id_counter)
+    }
+
+    /// - Registers a new output (thus creating a never-before-existed buffer)
+    /// - By index: the index of the output in the definition array
+    pub fn register_new_gate_output_by_index(
+        &mut self,
+        request: RegisterNewGateOutputByIndex,
+    ) -> Result<ComponentId, Box<sim::Error>> {
+        self.gates.register_new_output_by_index(
+            &mut self.data,
+            request.gate_output_socket,
+            &mut self.id_counter,
+        )
     }
 
     /// tick the current world
@@ -47,7 +61,7 @@ impl WorldState {
     ///
     /// for a good implementation this should not happen.
     /// if an error is given, simply put it in debug logs or somewhere else
-    pub fn tick_all(&mut self) -> Result<(), sim::Error> {
+    pub fn tick_all(&mut self) -> Result<(), Box<sim::Error>> {
         let res = self.gates.tick_all(&mut self.data);
         self.data.flush();
         res

@@ -1,7 +1,10 @@
 use std::rc::Rc;
 
 use crate::{
-    common::world::{ComponentId, ComponentIdIncrementer, DataPtr, DataPtrMut, GatePtrMut},
+    common::world::{
+        ComponentId, ComponentIdIncrementer, ComponentVersion, DataPtr, DataPtrMut,
+        GateOutputSocket, GatePtrMut,
+    },
     packages::{
         chelper::slice,
         destructor::{DestructedData, DestructedGate, DestructedGateDefinition},
@@ -19,6 +22,12 @@ pub struct SimGate {
 
     inputs: Vec<SimGateInputEntry>,
     outputs: Vec<SimGateOutputEntry>,
+}
+
+impl SimGate {
+    pub fn get_type(&self) -> &ComponentVersion {
+        self.handle.id()
+    }
 }
 
 #[derive(Clone)]
@@ -44,7 +53,7 @@ impl SimGate {
     pub fn new_default(
         handle: Rc<DestructedGate>,
         world_data: &WorldStateData,
-    ) -> Result<Self, sim::Error> {
+    ) -> Result<Self, Box<sim::Error>> {
         let gate_ptr = handle.default_value();
         let definition = match handle.normalised_definition(gate_ptr) {
             Ok(def) => def,
@@ -52,7 +61,8 @@ impl SimGate {
                 return Err(sim::Error::GateDefinition {
                     component: handle.id().clone(),
                     reason: e.to_string(),
-                });
+                }
+                .into());
             }
         };
 
@@ -64,9 +74,10 @@ impl SimGate {
                     handle: data_type.clone(),
                 }),
                 None => {
-                    return Err(sim::Error::MissingRequestedDataType {
+                    return Err(sim::Error::RequestedDataTypeNotFound {
                         data_type: entry.data_type_req.clone(),
-                    });
+                    }
+                    .into());
                 }
             }
         }
@@ -80,9 +91,10 @@ impl SimGate {
                     target_buffer: None,
                 }),
                 None => {
-                    return Err(sim::Error::MissingDataType {
+                    return Err(sim::Error::DataTypeNotFound {
                         data_type: entry.data_type.clone(),
-                    });
+                    }
+                    .into());
                 }
             }
         }
@@ -100,90 +112,101 @@ impl SimGate {
 
     /// - Registers a new output (thus creating a never-before-existed buffer)
     /// - By index: the index of the output in the definition array
-    pub fn register_new_output_by_index(
+    pub fn register_new_output(
         &mut self,
-        output_index: usize,
-        self_id: &ComponentId,
+        world_data: &mut WorldStateData,
+        gate_output_socket: GateOutputSocket,
         id_counter: &mut ComponentIdIncrementer,
-    ) -> Result<ComponentId, sim::Error> {
-        match self.outputs.get_mut(output_index) {
+    ) -> Result<ComponentId, Box<sim::Error>> {
+        match self.outputs.get_mut(gate_output_socket.get_index()) {
             Some(entry) => match entry.target_buffer {
                 Some(_) => Err(sim::Error::GateOutputDoubleRegister {
                     gate_type: self.handle.id().clone(),
-                    gate_id: *self_id,
-                    requested_index: output_index,
-                }),
+                    gate_socket: gate_output_socket,
+                }
+                .into()),
                 None => {
-                    let target_id = id_counter.get();
+                    let target_id = world_data.register_new_buffer_with_producer(
+                        entry.handle.clone(),
+                        id_counter,
+                        gate_output_socket,
+                    );
                     entry.target_buffer = Some(target_id);
                     Ok(target_id)
                 }
             },
             None => Err(sim::Error::GateOutputIndexOutOfBounds {
                 gate_type: self.handle.id().clone(),
-                gate_id: *self_id,
+                gate_socket: gate_output_socket,
                 output_list_length: self.outputs.len(),
-                requested_index: output_index,
-            }),
+            }
+            .into()),
         }
     }
 
     /// DANGER! The output id is not checked, if it does not exist the output will not be used
     ///
     /// - Registers an output given a buffer id (outputs to an existing buffer)
-    /// - By index: the index of the output in the definition array
-    pub fn register_existing_output_by_index(
+    pub fn register_existing_output(
         &mut self,
-        output_index: usize,
-        self_id: &ComponentId,
-        output_id: ComponentId,
-    ) -> Result<(), sim::Error> {
-        match self.outputs.get_mut(output_index) {
+        world_data: &mut WorldStateData,
+        gate_output_socket: GateOutputSocket,
+        target_id: ComponentId,
+    ) -> Result<(), Box<sim::Error>> {
+        match self.outputs.get_mut(gate_output_socket.get_index()) {
             Some(entry) => match entry.target_buffer {
                 Some(_) => Err(sim::Error::GateOutputDoubleRegister {
                     gate_type: self.handle.id().clone(),
-                    gate_id: *self_id,
-                    requested_index: output_index,
-                }),
+                    gate_socket: gate_output_socket,
+                }
+                .into()),
                 None => {
-                    entry.target_buffer = Some(output_id);
+                    world_data.set_buffer_producer(
+                        &target_id,
+                        gate_output_socket,
+                        entry.handle.id(),
+                    )?;
+                    entry.target_buffer = Some(target_id);
                     Ok(())
                 }
             },
             None => Err(sim::Error::GateOutputIndexOutOfBounds {
                 gate_type: self.handle.id().clone(),
-                gate_id: *self_id,
+                gate_socket: gate_output_socket,
                 output_list_length: self.outputs.len(),
-                requested_index: output_index,
-            }),
+            }
+            .into()),
         }
     }
 
     /// - Unregister an output: the output is not longer connected to a buffer
     /// - By index: the index of the output in the definition array
-    pub fn unregister_output_by_index(
+    ///
+    /// Returns the buffer ID that the gate originally outputs to
+    pub fn unregister_output(
         &mut self,
-        output_index: usize,
-        self_id: &ComponentId,
-    ) -> Result<(), sim::Error> {
-        match self.outputs.get_mut(output_index) {
+        world_data: &mut WorldStateData,
+        gate_output_socket: &GateOutputSocket,
+    ) -> Result<ComponentId, Box<sim::Error>> {
+        match self.outputs.get_mut(gate_output_socket.get_index()) {
             Some(entry) => match entry.target_buffer {
-                Some(_) => {
+                Some(target) => {
+                    world_data.remove_buffer_producer(&target)?;
                     entry.target_buffer = None;
-                    Ok(())
+                    Ok(target)
                 }
                 None => Err(sim::Error::GateOutputUnregisterNothing {
                     gate_type: self.handle.id().clone(),
-                    gate_id: *self_id,
-                    requested_index: output_index,
-                }),
+                    gate_socket: *gate_output_socket,
+                }
+                .into()),
             },
             None => Err(sim::Error::GateOutputIndexOutOfBounds {
                 gate_type: self.handle.id().clone(),
-                gate_id: *self_id,
                 output_list_length: self.outputs.len(),
-                requested_index: output_index,
-            }),
+                gate_socket: *gate_output_socket,
+            }
+            .into()),
         }
     }
 
@@ -193,15 +216,14 @@ impl SimGate {
     pub fn tick(
         &mut self, // doesn't need to be mut, if that is causing issues, will remove
         world_data: &mut WorldStateData,
-    ) -> Result<(), sim::Error> {
+        self_id: &ComponentId,
+    ) -> Result<(), Box<sim::Error>> {
         struct TempData {
             ptr: DataPtr,
             handle: Rc<DestructedData>,
         }
 
-        // missing data holds the list of ComponentId that should exist but does not (may be
-        // removed when it is shown there is no problem with the program)
-        let mut missing_data = Vec::new();
+        let mut errors = Vec::new();
         // temp data holds the list of temporary values for the data
         // so they can be dropped before the function returns
         let mut temp_data_ptrs = Vec::new();
@@ -218,7 +240,9 @@ impl SimGate {
                     } => match world_data.read_buffer(source_buffer) {
                         Some(data) => unsafe { data.get_data_ptr() },
                         None => {
-                            missing_data.push(*source_buffer);
+                            errors.push(sim::Error::BufferNotFound {
+                                buffer_id: *source_buffer,
+                            });
 
                             // if buffer not in world, treat as unbound
                             let data_ptr = handle.default_value();
@@ -261,21 +285,25 @@ impl SimGate {
                     },
                 )| match target_buffer {
                     Some(output_target) => {
-                        world_data.write_buffer(
-                            *output_target,
+                        if let Err(e) = world_data.write_buffer(
+                            output_target,
                             SimData::new_with_value(handle.clone(), *data),
-                        );
+                        ) {
+                            errors.push(*e);
+                        }
                     }
                     None => handle.drop_mem(*data),
                 },
             );
 
-        if missing_data.is_empty() {
+        if errors.is_empty() {
             Ok(())
         } else {
-            Err(sim::Error::MissingData {
-                component_ids: missing_data,
-            })
+            Err(sim::Error::TickSingleGate {
+                gate_id: *self_id,
+                errors,
+            }
+            .into())
         }
     }
 }

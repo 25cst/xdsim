@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 
 use crate::{
-    common::world::ComponentVersion,
+    common::world::{ComponentId, ComponentVersion, GateOutputSocket},
     sim::world::{DestructedDataHandles, DestructedGateHandles},
 };
 
-/// WorldState::new_blank(CreateBlankWorld)
+/// WorldState::new_blank(CreateBlankWorld) -> WorldState
 pub struct CreateBlankWorld {
+    /// All the data that can be used in the world
     pub data_handles: DestructedDataHandles,
+    /// All the gates that can be used in the world
     pub gate_handles: DestructedGateHandles,
 }
 
@@ -20,12 +22,12 @@ impl CreateBlankWorld {
     }
 }
 
+/// WorldState::create_default_gate(CreateDefaultGate) -> Result&lt;ComponentId&gt;
 pub struct CreateDefaultGate {
+    /// Identifier of the gate type
     pub gate: ComponentVersion,
 }
 
-impl CreateDefaultGate {
-    pub fn new(gate: ComponentVersion) -> Self {
-        Self { gate }
-    }
+pub struct RegisterNewGateOutputByIndex {
+    pub gate_output_socket: GateOutputSocket,
 }

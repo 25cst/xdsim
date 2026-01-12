@@ -4,3 +4,5 @@ mod component_types;
 pub use component_types::*;
 mod component_lib_id;
 pub use component_lib_id::*;
+mod gate_socket;
+pub use gate_socket::*;
