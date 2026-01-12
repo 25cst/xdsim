@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use semver::VersionReq;
 
+#[derive(Debug)]
 pub enum Error {
     /// the specified root directory for discovering packages does not exist
     IndexMissingDir { index_path: PathBuf },

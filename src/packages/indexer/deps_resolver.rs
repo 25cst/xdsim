@@ -11,7 +11,7 @@ pub struct DepsResolveRequest {
 }
 
 impl DepsResolveRequest {
-    fn new(name: String, version: VersionReq) -> Self {
+    pub fn new(name: String, version: VersionReq) -> Self {
         Self { name, version }
     }
 
@@ -30,7 +30,7 @@ impl DepsResolveRequest {
 /// may return an indexer::Error::MissingDependencies if there are any missing dependencies
 pub fn deps_resolver<I: DepsResolvable>(
     resolvable: &I,
-    requests: &[&DepsResolveRequest],
+    requests: &[DepsResolveRequest],
 ) -> Result<HashMap<String, Vec<Version>>, indexer::Error> {
     let mut resolved: HashMap<String, Vec<Version>> = HashMap::new();
 

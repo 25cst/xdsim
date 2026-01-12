@@ -5,7 +5,7 @@ use std::{
 
 use semver::Version;
 
-use crate::packages::indexer::component::PackageManifest;
+use crate::packages::indexer::{component::PackageManifest, deps_resolvable::DepsResolvable};
 
 /// an index of all packages
 #[cfg_attr(feature = "devel", derive(Debug))]
@@ -83,5 +83,31 @@ impl Package {
 
     pub fn get_version(&self, version: &Version) -> Option<&PackageManifest> {
         self.versions.get(version)
+    }
+
+    pub fn list_versions(&self) -> Vec<&Version> {
+        self.versions.keys().collect()
+    }
+}
+
+impl DepsResolvable for PackageIndex {
+    fn get_dependencies(
+        &self,
+        name: &str,
+        version: &Version,
+    ) -> Option<Vec<(&str, &semver::VersionReq)>> {
+        Some(
+            self.packages
+                .get(name)?
+                .get_version(version)?
+                .get_dependencies()
+                .iter()
+                .map(|(name, version)| (name.as_str(), version))
+                .collect(),
+        )
+    }
+
+    fn get_versions(&self, name: &str) -> Option<Vec<&Version>> {
+        Some(self.packages.get(name)?.list_versions())
     }
 }

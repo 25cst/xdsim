@@ -28,6 +28,6 @@
 
 pub mod component;
 mod deps_resolvable;
-mod deps_resolver;
+pub mod deps_resolver;
 mod error;
 pub use error::Error;

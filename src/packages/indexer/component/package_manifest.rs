@@ -28,6 +28,10 @@ impl PackageManifest {
     pub fn get_provides(&self) -> &HashMap<String, PackageComponentType> {
         &self.provides
     }
+
+    pub fn get_dependencies(&self) -> &HashMap<String, VersionReq> {
+        &self.dependencies
+    }
 }
 
 /// has public fields,
