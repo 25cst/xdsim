@@ -11,6 +11,14 @@ pub struct ComponentVersionReq {
     pub component: String,
 }
 
+impl ComponentVersionReq {
+    pub fn matches(&self, other: &ComponentVersion) -> bool {
+        self.package == other.package
+            && self.component == other.component
+            && self.version_req.matches(&other.version)
+    }
+}
+
 impl Display for ComponentVersionReq {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(

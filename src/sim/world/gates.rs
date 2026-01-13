@@ -6,11 +6,14 @@ use std::{
 use crate::{
     common::world::{ComponentId, ComponentIdIncrementer, ComponentVersion, GateOutputSocket},
     packages::destructor::DestructedGate,
-    sim::{self, component::SimGate, error::TickAllErrorEntry, world::*},
+    sim::{
+        self,
+        component::SimGate,
+        error::TickAllErrorEntry,
+        requests::DestructedGateHandles,
+        world::{data::WorldStateData, *},
+    },
 };
-
-pub type DestructedGateHandles =
-    HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedGate>>>>;
 
 pub struct WorldStateGates {
     /// all gate types

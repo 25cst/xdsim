@@ -10,11 +10,8 @@ use crate::{
         GateInputSocket, GateOutputSocket,
     },
     packages::destructor::DestructedData,
-    sim::{self, component::SimData, world::*},
+    sim::{self, component::SimData, requests::DestructedDataHandles, world::*},
 };
-
-pub type DestructedDataHandles =
-    HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedData>>>>;
 
 struct RegisteredBuffer {
     data_type: Rc<DestructedData>,
@@ -75,6 +72,19 @@ impl RegisteredBuffer {
         }
     }
 
+    pub fn new_with_consumer(
+        data_type: Rc<DestructedData>,
+        consumer_socket: GateInputSocket,
+    ) -> Self {
+        Self {
+            data_type: data_type.clone(),
+            producer: None,
+            consumers: HashSet::from([consumer_socket]),
+            read_only: SimData::new_default(data_type),
+            write_only: None,
+        }
+    }
+
     /// set the gate socket that outputs to this buffer
     pub fn set_producer(
         &mut self,
@@ -94,7 +104,7 @@ impl RegisteredBuffer {
         Ok(())
     }
 
-    pub fn remove_producer(
+    pub fn unset_producer(
         &mut self,
         self_id: &ComponentId,
     ) -> Result<GateOutputSocket, Box<sim::Error>> {
@@ -104,6 +114,40 @@ impl RegisteredBuffer {
                 buffer_id: *self_id,
             }
             .into()),
+        }
+    }
+
+    /// add a consumer of the buffer
+    pub fn add_consumer(
+        &mut self,
+        self_id: &ComponentId,
+        gate_socket: GateInputSocket,
+    ) -> Result<(), Box<sim::Error>> {
+        if !self.consumers.insert(gate_socket) {
+            Err(sim::Error::BufferDoubleConsumerRegister {
+                buffer_id: *self_id,
+                consumer_socket: gate_socket,
+            }
+            .into())
+        } else {
+            Ok(())
+        }
+    }
+
+    /// remove a consumer of the buffer
+    pub fn remove_consumer(
+        &mut self,
+        self_id: &ComponentId,
+        gate_socket: &GateInputSocket,
+    ) -> Result<(), Box<sim::Error>> {
+        if !self.consumers.remove(gate_socket) {
+            Err(sim::Error::BufferConsumerToRemoveNonexistent {
+                buffer_id: *self_id,
+                consumer_socket: *gate_socket,
+            }
+            .into())
+        } else {
+            Ok(())
         }
     }
 }
@@ -233,7 +277,7 @@ impl WorldStateData {
     }
 
     /// remove the existing producer of a buffer
-    pub fn remove_buffer_producer(
+    pub fn unset_buffer_producer(
         &mut self,
         buffer_id: &ComponentId,
     ) -> Result<GateOutputSocket, Box<sim::Error>> {
@@ -247,6 +291,71 @@ impl WorldStateData {
             }
         };
 
-        buffer.remove_producer(buffer_id)
+        buffer.unset_producer(buffer_id)
+    }
+
+    /// create a new buffer with specified data type
+    pub fn register_new_buffer_with_consumer(
+        &mut self,
+        data_type: Rc<DestructedData>,
+        id_counter: &mut ComponentIdIncrementer,
+        consumer_socket: GateInputSocket,
+    ) -> ComponentId {
+        let buffer_id = id_counter.get();
+
+        self.buffers.insert(
+            buffer_id,
+            RegisteredBuffer::new_with_consumer(data_type, consumer_socket),
+        );
+        buffer_id
+    }
+
+    /// create a buffer with a consumer
+    ///
+    /// returns the data type of the buffer if succeed
+    pub fn add_buffer_consumer(
+        &mut self,
+        buffer_id: &ComponentId,
+        consumer_socket: GateInputSocket,
+        data_type_assert: &ComponentVersionReq,
+    ) -> Result<&Rc<DestructedData>, Box<sim::Error>> {
+        match self.buffers.get_mut(buffer_id) {
+            Some(buffer) => {
+                if !data_type_assert.matches(buffer.data_type.id()) {
+                    return Err(sim::Error::BufferTypeReqMismatch {
+                        buffer_id: *buffer_id,
+                        got_type: buffer.data_type.id().clone(),
+                        expected_type: data_type_assert.clone(),
+                    }
+                    .into());
+                }
+
+                buffer.add_consumer(buffer_id, consumer_socket)?;
+                Ok(&buffer.data_type)
+            }
+            None => Err(sim::Error::BufferNotFound {
+                buffer_id: *buffer_id,
+            }
+            .into()),
+        }
+    }
+
+    /// remove a consumer from a buffer
+    pub fn remove_buffer_consumer(
+        &mut self,
+        buffer_id: &ComponentId,
+        consumer_socket: &GateInputSocket,
+    ) -> Result<(), Box<sim::Error>> {
+        let buffer = match self.buffers.get_mut(buffer_id) {
+            Some(buffer) => buffer,
+            None => {
+                return Err(sim::Error::BufferNotFound {
+                    buffer_id: *buffer_id,
+                }
+                .into());
+            }
+        };
+
+        buffer.remove_consumer(buffer_id, consumer_socket)
     }
 }

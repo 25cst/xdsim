@@ -1,4 +1,6 @@
-use crate::common::world::{ComponentId, ComponentVersion, ComponentVersionReq, GateOutputSocket};
+use crate::common::world::{
+    ComponentId, ComponentVersion, ComponentVersionReq, GateInputSocket, GateOutputSocket,
+};
 
 pub enum Error {
     TickSingleGate {
@@ -26,11 +28,22 @@ pub enum Error {
         gate_socket: GateOutputSocket,
         output_list_length: usize,
     },
+    /// Requests gate input by index but out of bounds
+    GateInputIndexOutOfBounds {
+        gate_type: ComponentVersion,
+        gate_socket: GateInputSocket,
+        output_list_length: usize,
+    },
     /// Trying to register two producers for a buffer
     BufferDoubleProducerRegister {
         gate_type: ComponentVersion,
         gate_socket: GateOutputSocket,
         buffer_id: ComponentId,
+    },
+    /// Registering an input for a gate when it is already registered to an input
+    GateInputDoubleRegister {
+        gate_type: ComponentVersion,
+        gate_socket: GateInputSocket,
     },
     /// Registering an output for a gate when it is already registered to an output
     GateOutputDoubleRegister {
@@ -50,10 +63,37 @@ pub enum Error {
     BufferDoubleWrite { buffer_id: ComponentId },
     /// Requested to remove buffer producer, but the buffer does not have a producer
     BufferNoProducerToRemove { buffer_id: ComponentId },
+    /// basic type error when socket and buffer type mismatches
     BufferTypeMismatch {
         buffer_id: ComponentId,
+        /// buffer type
         expected_type: ComponentVersion,
+        /// producer socket type
         got_type: ComponentVersion,
+    },
+    /// basic type error when socket (request) and buffer type (concrete) mismatches
+    BufferTypeReqMismatch {
+        buffer_id: ComponentId,
+        /// consumer socket type
+        expected_type: ComponentVersionReq,
+        /// buffer type
+        got_type: ComponentVersion,
+    },
+    /// trying to remove a nonexistend consumer
+    ///
+    /// this should never happen as the case would've already been covered by SimGate, but I
+    /// decided to also make WorldData satisfy constraints if SimGate goes wrong
+    BufferConsumerToRemoveNonexistent {
+        buffer_id: ComponentId,
+        consumer_socket: GateInputSocket,
+    },
+    /// trying to add an already existing consumer
+    ///
+    /// this should never happen as the case would've already been covered by SimGate, but I
+    /// decided to also make WorldData satisfy constraints if SimGate goes wrong
+    BufferDoubleConsumerRegister {
+        buffer_id: ComponentId,
+        consumer_socket: GateInputSocket,
     },
 }
 

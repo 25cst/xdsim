@@ -2,14 +2,14 @@ use std::rc::Rc;
 
 use crate::{
     common::world::{
-        ComponentId, ComponentIdIncrementer, ComponentVersion, DataPtr, DataPtrMut,
-        GateOutputSocket, GatePtrMut,
+        ComponentId, ComponentIdIncrementer, ComponentVersion, ComponentVersionReq, DataPtr,
+        DataPtrMut, GateInputSocket, GateOutputSocket, GatePtrMut,
     },
     packages::{
         chelper::slice,
         destructor::{DestructedData, DestructedGate, DestructedGateDefinition},
     },
-    sim::{self, component::SimData, world::WorldStateData},
+    sim::{self, component::SimData, world::data::WorldStateData},
 };
 
 /// A single gate
@@ -31,7 +31,13 @@ impl SimGate {
 }
 
 #[derive(Clone)]
-pub enum SimGateInputEntry {
+pub struct SimGateInputEntry {
+    request: ComponentVersionReq,
+    status: SimGateInputEntryStatus,
+}
+
+#[derive(Clone)]
+pub enum SimGateInputEntryStatus {
     Unbound {
         handle: Rc<DestructedData>,
     },
@@ -70,9 +76,15 @@ impl SimGate {
 
         for entry in definition.inputs.iter() {
             match world_data.request_handle(&entry.data_type_req) {
-                Some(data_type) => inputs.push(SimGateInputEntry::Unbound {
-                    handle: data_type.clone(),
-                }),
+                Some(data_type) => {
+                    let status = SimGateInputEntryStatus::Unbound {
+                        handle: data_type.clone(),
+                    };
+                    inputs.push(SimGateInputEntry {
+                        request: entry.data_type_req.clone(),
+                        status,
+                    })
+                }
                 None => {
                     return Err(sim::Error::RequestedDataTypeNotFound {
                         data_type: entry.data_type_req.clone(),
@@ -144,8 +156,6 @@ impl SimGate {
         }
     }
 
-    /// DANGER! The output id is not checked, if it does not exist the output will not be used
-    ///
     /// - Registers an output given a buffer id (outputs to an existing buffer)
     pub fn register_existing_output(
         &mut self,
@@ -191,7 +201,7 @@ impl SimGate {
         match self.outputs.get_mut(gate_output_socket.get_index()) {
             Some(entry) => match entry.target_buffer {
                 Some(target) => {
-                    world_data.remove_buffer_producer(&target)?;
+                    world_data.unset_buffer_producer(&target)?;
                     entry.target_buffer = None;
                     Ok(target)
                 }
@@ -205,6 +215,43 @@ impl SimGate {
                 gate_type: self.handle.id().clone(),
                 output_list_length: self.outputs.len(),
                 gate_socket: *gate_output_socket,
+            }
+            .into()),
+        }
+    }
+
+    /// - Registers an input given a buffer id (input fetched from said buffer)
+    pub fn register_existing_input(
+        &mut self,
+        world_data: &mut WorldStateData,
+        gate_input_socket: GateInputSocket,
+        source_id: ComponentId,
+    ) -> Result<(), Box<sim::Error>> {
+        match self.inputs.get_mut(gate_input_socket.get_index()) {
+            Some(entry) => match &entry.status {
+                SimGateInputEntryStatus::Bound { .. } => Err(sim::Error::GateInputDoubleRegister {
+                    gate_type: self.handle.id().clone(),
+                    gate_socket: gate_input_socket,
+                }
+                .into()),
+                SimGateInputEntryStatus::Unbound { .. } => {
+                    let concrete_type = world_data.add_buffer_consumer(
+                        &source_id,
+                        gate_input_socket,
+                        &entry.request,
+                    )?;
+
+                    entry.status = SimGateInputEntryStatus::Bound {
+                        handle: concrete_type.clone(),
+                        source_buffer: source_id,
+                    };
+                    Ok(())
+                }
+            },
+            None => Err(sim::Error::GateInputIndexOutOfBounds {
+                gate_type: self.handle.id().clone(),
+                gate_socket: gate_input_socket,
+                output_list_length: self.inputs.len(),
             }
             .into()),
         }
@@ -233,8 +280,8 @@ impl SimGate {
         let input_slice = slice::from_vec_rustonly(
             self.inputs
                 .iter()
-                .map(|input| match input {
-                    SimGateInputEntry::Bound {
+                .map(|input| match &input.status {
+                    SimGateInputEntryStatus::Bound {
                         handle,
                         source_buffer,
                     } => match world_data.read_buffer(source_buffer) {
@@ -253,7 +300,7 @@ impl SimGate {
                             data_ptr as DataPtr
                         }
                     },
-                    SimGateInputEntry::Unbound { handle } => {
+                    SimGateInputEntryStatus::Unbound { handle } => {
                         let data_ptr = handle.default_value();
                         temp_data_ptrs.push(TempData {
                             ptr: data_ptr,

@@ -10,3 +10,4 @@ mod error;
 mod requests;
 mod world;
 pub use error::Error;
+pub use world::master;

@@ -1,9 +1,20 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
+
+use semver::Version;
 
 use crate::{
     common::world::{ComponentId, ComponentVersion, GateOutputSocket},
-    sim::world::{DestructedDataHandles, DestructedGateHandles},
+    packages::destructor::{DestructedData, DestructedGate},
 };
+
+pub type DestructedGateHandles =
+    HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedGate>>>>;
+pub type DestructedDataHandles =
+    HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedData>>>>;
+
+pub type PackageName = String;
+pub type PackageVersion = Version;
+pub type ComponentName = String;
 
 /// WorldState::new_blank(CreateBlankWorld) -> WorldState
 pub struct CreateBlankWorld {

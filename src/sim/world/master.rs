@@ -9,10 +9,6 @@ use crate::{
     },
 };
 
-pub type PackageName = String;
-pub type PackageVersion = Version;
-pub type ComponentName = String;
-
 /// The representation for simulation state
 pub struct WorldState {
     data: WorldStateData,
