@@ -39,16 +39,16 @@ pub struct CreateDefaultGate {
     pub gate: ComponentVersion,
 }
 
-pub struct RegisterNewGateOutputByIndex {
+pub struct RegisterNewGateOutput {
     pub socket: GateOutputSocket,
 }
 
-pub struct RegisterExistingGateOutputByIndex {
+pub struct RegisterExistingGateOutput {
     pub socket: GateOutputSocket,
     pub buffer: ComponentId,
 }
 
-pub struct RegisterExistingGateInputByIndex {
+pub struct RegisterExistingGateInput {
     pub socket: GateInputSocket,
     pub buffer: ComponentId,
 }

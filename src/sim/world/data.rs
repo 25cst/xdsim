@@ -4,6 +4,8 @@ use std::{
     rc::Rc,
 };
 
+#[cfg(test)]
+use crate::common::world::DataPtr;
 use crate::{
     common::world::{
         ComponentId, ComponentIdIncrementer, ComponentVersion, ComponentVersionReq,
@@ -357,5 +359,16 @@ impl WorldStateData {
         };
 
         buffer.remove_consumer(buffer_id, consumer_socket)
+    }
+
+    #[cfg(test)]
+    /// # Safety
+    ///
+    /// the pointer has not safety guarantees besides that it is valid, you may not modify or drop
+    /// the pointer
+    ///
+    /// get data
+    pub unsafe fn get_data_ptr(&self, buffer_id: &ComponentId) -> Option<DataPtr> {
+        Some(unsafe { self.buffers.get(buffer_id)?.read_only.get_data_ptr() })
     }
 }

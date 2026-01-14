@@ -7,8 +7,7 @@
 
 pub mod component;
 mod error;
-mod requests;
+pub mod requests;
 mod world;
 pub use error::Error;
-pub use requests::*;
 pub use world::master;

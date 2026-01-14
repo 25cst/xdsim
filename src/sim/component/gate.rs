@@ -307,7 +307,6 @@ impl SimGate {
                     } => match world_data.read_buffer(source_buffer) {
                         Some(data) => unsafe { data.get_data_ptr() },
                         None => {
-                            println!("a");
                             errors.push(sim::Error::BufferNotFound {
                                 buffer_id: *source_buffer,
                             });

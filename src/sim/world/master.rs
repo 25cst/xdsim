@@ -1,13 +1,12 @@
 use semver::Version;
 
+#[cfg(test)]
+use crate::common::world::DataPtr;
 use crate::{
     common::world::{ComponentId, ComponentIdIncrementer},
     sim::{
         self,
-        requests::{
-            CreateBlankWorld, CreateDefaultGate, RegisterExistingGateInputByIndex,
-            RegisterExistingGateOutputByIndex, RegisterNewGateOutputByIndex,
-        },
+        requests::*,
         world::{data::WorldStateData, gates::WorldStateGates},
     },
 };
@@ -41,22 +40,28 @@ impl WorldState {
     /// Registers a new output (thus creating a never-before-existed buffer)
     pub fn register_new_gate_output(
         &mut self,
-        request: RegisterNewGateOutputByIndex,
+        request: RegisterNewGateOutput,
     ) -> Result<ComponentId, Box<sim::Error>> {
-        self.gates.register_new_output_by_index(
-            &mut self.data,
-            request.socket,
-            &mut self.id_counter,
-        )
+        self.gates
+            .register_new_output(&mut self.data, request.socket, &mut self.id_counter)
     }
 
     /// Registers an output socket to output to an existing buffer
     pub fn register_existing_gate_output(
         &mut self,
-        request: RegisterExistingGateOutputByIndex,
+        request: RegisterExistingGateOutput,
     ) -> Result<(), Box<sim::Error>> {
         self.gates
-            .register_existing_output_by_index(&mut self.data, request.socket, request.buffer)
+            .register_existing_output(&mut self.data, request.socket, request.buffer)
+    }
+
+    /// Registers an input socket to take input from an existing buffer
+    pub fn register_existing_gate_input(
+        &mut self,
+        request: RegisterExistingGateInput,
+    ) -> Result<(), Box<sim::Error>> {
+        self.gates
+            .register_existing_input(&mut self.data, request.socket, request.buffer)
     }
 
     /// tick the current world
@@ -72,5 +77,16 @@ impl WorldState {
         let res = self.gates.tick_all(&mut self.data);
         self.data.flush();
         res
+    }
+
+    #[cfg(test)]
+    /// # Safety
+    ///
+    /// the pointer has not safety guarantees besides that it is valid, you may not modify or drop
+    /// the pointer
+    ///
+    /// get data
+    pub unsafe fn get_data_ptr(&self, buffer_id: &ComponentId) -> Option<DataPtr> {
+        unsafe { self.data.get_data_ptr(buffer_id) }
     }
 }

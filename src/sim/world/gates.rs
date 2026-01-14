@@ -4,7 +4,9 @@ use std::{
 };
 
 use crate::{
-    common::world::{ComponentId, ComponentIdIncrementer, ComponentVersion, GateOutputSocket},
+    common::world::{
+        ComponentId, ComponentIdIncrementer, ComponentVersion, GateInputSocket, GateOutputSocket,
+    },
     packages::destructor::DestructedGate,
     sim::{
         self,
@@ -61,9 +63,8 @@ impl WorldStateGates {
         Ok(new_gate_id)
     }
 
-    /// - Registers a new output (thus creating a never-before-existed buffer)
-    /// - By index: the index of the output in the definition array
-    pub fn register_new_output_by_index(
+    /// Registers a new output (thus creating a never-before-existed buffer)
+    pub fn register_new_output(
         &mut self,
         world_data: &mut WorldStateData,
         gate_output_socket: GateOutputSocket,
@@ -78,11 +79,8 @@ impl WorldStateGates {
         }
     }
 
-    /// DANGER! The output id is not checked, if it does not exist the output will not be used
-    ///
-    /// - Registers an output given a buffer id (outputs to an existing buffer)
-    /// - By index: the index of the output in the definition array
-    pub fn register_existing_output_by_index(
+    /// Registers an output given a buffer id (outputs to an existing buffer)
+    pub fn register_existing_output(
         &mut self,
         world_data: &mut WorldStateData,
         gate_output_socket: GateOutputSocket,
@@ -103,7 +101,7 @@ impl WorldStateGates {
     /// - By index: the index of the output in the definition array
     ///
     /// Returns the ID of the buffer that the gate originally outputs to
-    pub fn unregister_output_by_index(
+    pub fn unregister_output(
         &mut self,
         world_data: &mut WorldStateData,
         gate_output_socket: &GateOutputSocket,
@@ -112,6 +110,24 @@ impl WorldStateGates {
             Some(gate) => gate.unregister_output(world_data, gate_output_socket),
             None => Err(sim::Error::GateNotFound {
                 gate_id: *gate_output_socket.get_id(),
+            }
+            .into()),
+        }
+    }
+
+    /// Registers an output given a buffer id (outputs to an existing buffer)
+    pub fn register_existing_input(
+        &mut self,
+        world_data: &mut WorldStateData,
+        gate_input_socket: GateInputSocket,
+        source_buffer_id: ComponentId,
+    ) -> Result<(), Box<sim::Error>> {
+        match self.gates.get_mut(gate_input_socket.get_id()) {
+            Some(gate) => {
+                gate.register_existing_input(world_data, gate_input_socket, source_buffer_id)
+            }
+            None => Err(sim::Error::GateNotFound {
+                gate_id: *gate_input_socket.get_id(),
             }
             .into()),
         }
