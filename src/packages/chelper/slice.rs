@@ -5,7 +5,7 @@ use std::{
 
 use xdsim_cbinds::common::{Slice, Str};
 
-extern "C" fn vec_drop_rustonly<T>(vec_ptr: *mut c_void, len: u64) {
+extern "C" fn vec_drop_rustonly<T>(vec_ptr: *mut c_void, _item_size: u64, len: u64) {
     let thin_ptr = vec_ptr as *mut T;
     let fat_ptr: *mut [T] = ptr::slice_from_raw_parts_mut(thin_ptr, len as usize);
     let _boxed_slice: Box<[T]> = unsafe { Box::from_raw(fat_ptr) };
@@ -19,6 +19,7 @@ extern "C" fn vec_drop_rustonly<T>(vec_ptr: *mut c_void, len: u64) {
 pub fn from_vec_rustonly<T>(vec: Vec<T>) -> Slice {
     Slice {
         length: vec.len() as u64,
+        item_size: size_of::<T>() as u64,
         first: Box::into_raw(vec.into_boxed_slice()) as *mut c_void,
         drop: vec_drop_rustonly::<T>,
     }
