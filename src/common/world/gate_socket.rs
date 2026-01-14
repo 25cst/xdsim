@@ -1,6 +1,6 @@
 use crate::common::world::ComponentId;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct GateOutputSocket {
     id: ComponentId,
     index: usize,
@@ -20,7 +20,7 @@ impl GateOutputSocket {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct GateInputSocket {
     id: ComponentId,
     index: usize,

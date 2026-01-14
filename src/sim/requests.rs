@@ -3,7 +3,7 @@ use std::{collections::HashMap, rc::Rc};
 use semver::Version;
 
 use crate::{
-    common::world::{ComponentId, ComponentVersion, GateOutputSocket},
+    common::world::{ComponentId, ComponentVersion, GateInputSocket, GateOutputSocket},
     packages::destructor::{DestructedData, DestructedGate},
 };
 
@@ -40,5 +40,15 @@ pub struct CreateDefaultGate {
 }
 
 pub struct RegisterNewGateOutputByIndex {
-    pub gate_output_socket: GateOutputSocket,
+    pub socket: GateOutputSocket,
+}
+
+pub struct RegisterExistingGateOutputByIndex {
+    pub socket: GateOutputSocket,
+    pub buffer: ComponentId,
+}
+
+pub struct RegisterExistingGateInputByIndex {
+    pub socket: GateInputSocket,
+    pub buffer: ComponentId,
 }

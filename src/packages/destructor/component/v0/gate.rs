@@ -16,14 +16,14 @@ use crate::{
 };
 
 pub struct DestructedGate {
-    pub tick: fn(GateMut, Slice) -> Slice,
-    pub draw: fn(Gate, Direction, Vec2) -> Graphic,
-    pub definition: fn(Gate) -> GateDefinition,
-    pub properties: fn(GateMut) -> PropertiesMut,
-    pub serialize: fn(Gate) -> Slice,
-    pub deserialize: fn(*const Slice) -> GateMut,
-    pub default_value: fn() -> GateMut,
-    pub drop_mem: fn(GateMut),
+    pub tick: extern "C" fn(GateMut, Slice) -> Slice,
+    pub draw: extern "C" fn(Gate, Direction, Vec2) -> Graphic,
+    pub definition: extern "C" fn(Gate) -> GateDefinition,
+    pub properties: extern "C" fn(GateMut) -> PropertiesMut,
+    pub serialize: extern "C" fn(Gate) -> Slice,
+    pub deserialize: extern "C" fn(*const Slice) -> GateMut,
+    pub default_value: extern "C" fn() -> GateMut,
+    pub drop_mem: extern "C" fn(GateMut),
 }
 
 impl DestructedGate {

@@ -2,6 +2,7 @@ use crate::common::world::{
     ComponentId, ComponentVersion, ComponentVersionReq, GateInputSocket, GateOutputSocket,
 };
 
+#[derive(Debug)]
 pub enum Error {
     TickSingleGate {
         gate_id: ComponentId,
@@ -55,6 +56,11 @@ pub enum Error {
         gate_type: ComponentVersion,
         gate_socket: GateOutputSocket,
     },
+    /// Unregisters an input, but it is not registered in the first place
+    GateInputUnregisterNothing {
+        gate_type: ComponentVersion,
+        gate_socket: GateInputSocket,
+    },
     /// No gate with requested ID in world
     GateNotFound { gate_id: ComponentId },
     /// No buffer with requested ID in world
@@ -97,6 +103,7 @@ pub enum Error {
     },
 }
 
+#[derive(Debug)]
 pub struct TickAllErrorEntry {
     emitter: ComponentId,
     content: Error,

@@ -1,5 +1,5 @@
 use std::{
-    ffi::{CString, c_void},
+    ffi::{CStr, c_void},
     ptr,
 };
 
@@ -25,7 +25,7 @@ pub fn from_vec_rustonly<T>(vec: Vec<T>) -> Slice {
 }
 
 pub fn from_str(original: &Str) -> String {
-    unsafe { CString::from_raw(original.first) }
+    unsafe { CStr::from_ptr(original.first) }
         .to_string_lossy()
         .to_string()
 }

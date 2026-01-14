@@ -10,13 +10,13 @@ use xdsim_cbinds::{
 use crate::packages::destructor::{self, DestructRequest};
 
 pub struct DestructedConnection {
-    pub draw: fn(Connection, *const ConnectionSegment, Data) -> Graphic,
-    pub definition: fn(Connection) -> ConnectionDefinition,
-    pub properties: fn(ConnectionMut) -> PropertiesMut,
-    pub serialize: fn(Connection) -> Slice,
-    pub deserialize: fn(*const Slice) -> ConnectionMut,
-    pub default_value: fn() -> ConnectionMut,
-    pub drop_mem: fn(ConnectionMut),
+    pub draw: extern "C" fn(Connection, *const ConnectionSegment, Data) -> Graphic,
+    pub definition: extern "C" fn(Connection) -> ConnectionDefinition,
+    pub properties: extern "C" fn(ConnectionMut) -> PropertiesMut,
+    pub serialize: extern "C" fn(Connection) -> Slice,
+    pub deserialize: extern "C" fn(*const Slice) -> ConnectionMut,
+    pub default_value: extern "C" fn() -> ConnectionMut,
+    pub drop_mem: extern "C" fn(ConnectionMut),
 }
 
 impl DestructedConnection {

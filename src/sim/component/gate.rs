@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{ffi::c_void, rc::Rc};
 
 use crate::{
     common::world::{
@@ -33,14 +33,14 @@ impl SimGate {
 #[derive(Clone)]
 pub struct SimGateInputEntry {
     request: ComponentVersionReq,
+    /// data type handle to use if unbound
+    default_data_type: Rc<DestructedData>,
     status: SimGateInputEntryStatus,
 }
 
 #[derive(Clone)]
 pub enum SimGateInputEntryStatus {
-    Unbound {
-        handle: Rc<DestructedData>,
-    },
+    Unbound,
     Bound {
         handle: Rc<DestructedData>,
         source_buffer: ComponentId,
@@ -76,15 +76,11 @@ impl SimGate {
 
         for entry in definition.inputs.iter() {
             match world_data.request_handle(&entry.data_type_req) {
-                Some(data_type) => {
-                    let status = SimGateInputEntryStatus::Unbound {
-                        handle: data_type.clone(),
-                    };
-                    inputs.push(SimGateInputEntry {
-                        request: entry.data_type_req.clone(),
-                        status,
-                    })
-                }
+                Some(data_type) => inputs.push(SimGateInputEntry {
+                    request: entry.data_type_req.clone(),
+                    default_data_type: data_type.clone(),
+                    status: SimGateInputEntryStatus::Unbound,
+                }),
                 None => {
                     return Err(sim::Error::RequestedDataTypeNotFound {
                         data_type: entry.data_type_req.clone(),
@@ -190,7 +186,6 @@ impl SimGate {
     }
 
     /// - Unregister an output: the output is not longer connected to a buffer
-    /// - By index: the index of the output in the definition array
     ///
     /// Returns the buffer ID that the gate originally outputs to
     pub fn unregister_output(
@@ -234,7 +229,7 @@ impl SimGate {
                     gate_socket: gate_input_socket,
                 }
                 .into()),
-                SimGateInputEntryStatus::Unbound { .. } => {
+                SimGateInputEntryStatus::Unbound => {
                     let concrete_type = world_data.add_buffer_consumer(
                         &source_id,
                         gate_input_socket,
@@ -257,6 +252,36 @@ impl SimGate {
         }
     }
 
+    /// - Unregister an input: the input is not longer connected to a buffer
+    ///
+    /// Returns the buffer ID that the gate originally takes input from
+    pub fn unregister_input(
+        &mut self,
+        world_data: &mut WorldStateData,
+        gate_input_socket: &GateInputSocket,
+    ) -> Result<ComponentId, Box<sim::Error>> {
+        match self.inputs.get_mut(gate_input_socket.get_index()) {
+            Some(entry) => match entry.status {
+                SimGateInputEntryStatus::Bound { source_buffer, .. } => {
+                    world_data.remove_buffer_consumer(&source_buffer, gate_input_socket)?;
+                    entry.status = SimGateInputEntryStatus::Unbound;
+                    Ok(source_buffer)
+                }
+                SimGateInputEntryStatus::Unbound => Err(sim::Error::GateInputUnregisterNothing {
+                    gate_type: self.handle.id().clone(),
+                    gate_socket: *gate_input_socket,
+                }
+                .into()),
+            },
+            None => Err(sim::Error::GateInputIndexOutOfBounds {
+                gate_type: self.handle.id().clone(),
+                output_list_length: self.outputs.len(),
+                gate_socket: *gate_input_socket,
+            }
+            .into()),
+        }
+    }
+
     /// if this function returns an error
     /// it is simply reporting a missing SimData that should exist
     /// a default value for that SimData is used and the world can containue as usual
@@ -265,15 +290,10 @@ impl SimGate {
         world_data: &mut WorldStateData,
         self_id: &ComponentId,
     ) -> Result<(), Box<sim::Error>> {
-        struct TempData {
-            ptr: DataPtr,
-            handle: Rc<DestructedData>,
-        }
-
         let mut errors = Vec::new();
         // temp data holds the list of temporary values for the data
         // so they can be dropped before the function returns
-        let mut temp_data_ptrs = Vec::new();
+        let mut temp_datas = Vec::new();
 
         // creates the array of pointers to input data
         // (is it possible to reduce the amount of cloning here?)
@@ -287,26 +307,23 @@ impl SimGate {
                     } => match world_data.read_buffer(source_buffer) {
                         Some(data) => unsafe { data.get_data_ptr() },
                         None => {
+                            println!("a");
                             errors.push(sim::Error::BufferNotFound {
                                 buffer_id: *source_buffer,
                             });
 
                             // if buffer not in world, treat as unbound
-                            let data_ptr = handle.default_value();
-                            temp_data_ptrs.push(TempData {
-                                ptr: data_ptr,
-                                handle: handle.clone(),
-                            });
-                            data_ptr as DataPtr
+                            let temp_data = SimData::new_default(handle.clone());
+                            let ptr = unsafe { temp_data.get_data_ptr() };
+                            temp_datas.push(temp_data);
+                            ptr
                         }
                     },
-                    SimGateInputEntryStatus::Unbound { handle } => {
-                        let data_ptr = handle.default_value();
-                        temp_data_ptrs.push(TempData {
-                            ptr: data_ptr,
-                            handle: handle.clone(),
-                        });
-                        data_ptr as DataPtr
+                    SimGateInputEntryStatus::Unbound => {
+                        let temp_data = SimData::new_default(input.default_data_type.clone());
+                        let ptr = unsafe { temp_data.get_data_ptr() };
+                        temp_datas.push(temp_data);
+                        ptr
                     }
                 })
                 .collect(),
@@ -314,18 +331,12 @@ impl SimGate {
 
         let output_slice = self.handle.tick(self.gate_ptr, input_slice);
 
-        // drops the default data that was created
-        // because they are temporary and will not be added to the world
-        temp_data_ptrs
-            .into_iter()
-            .for_each(|TempData { ptr, handle }| handle.drop_mem(ptr as DataPtrMut));
-
         slice::from_slice::<DataPtrMut>(&output_slice)
             .iter()
             .zip(self.outputs.iter())
             .for_each(
                 |(
-                    data,
+                    &data,
                     SimGateOutputEntry {
                         handle,
                         target_buffer,
@@ -334,12 +345,12 @@ impl SimGate {
                     Some(output_target) => {
                         if let Err(e) = world_data.write_buffer(
                             output_target,
-                            SimData::new_with_value(handle.clone(), *data),
+                            SimData::new_with_value(handle.clone(), data),
                         ) {
                             errors.push(*e);
                         }
                     }
-                    None => handle.drop_mem(*data),
+                    None => handle.drop_mem(data),
                 },
             );
 

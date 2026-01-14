@@ -4,7 +4,10 @@ use crate::{
     common::world::{ComponentId, ComponentIdIncrementer},
     sim::{
         self,
-        requests::{CreateBlankWorld, CreateDefaultGate, RegisterNewGateOutputByIndex},
+        requests::{
+            CreateBlankWorld, CreateDefaultGate, RegisterExistingGateInputByIndex,
+            RegisterExistingGateOutputByIndex, RegisterNewGateOutputByIndex,
+        },
         world::{data::WorldStateData, gates::WorldStateGates},
     },
 };
@@ -35,17 +38,25 @@ impl WorldState {
             .create_default_gate(request.gate, &self.data, &mut self.id_counter)
     }
 
-    /// - Registers a new output (thus creating a never-before-existed buffer)
-    /// - By index: the index of the output in the definition array
-    pub fn register_new_gate_output_by_index(
+    /// Registers a new output (thus creating a never-before-existed buffer)
+    pub fn register_new_gate_output(
         &mut self,
         request: RegisterNewGateOutputByIndex,
     ) -> Result<ComponentId, Box<sim::Error>> {
         self.gates.register_new_output_by_index(
             &mut self.data,
-            request.gate_output_socket,
+            request.socket,
             &mut self.id_counter,
         )
+    }
+
+    /// Registers an output socket to output to an existing buffer
+    pub fn register_existing_gate_output(
+        &mut self,
+        request: RegisterExistingGateOutputByIndex,
+    ) -> Result<(), Box<sim::Error>> {
+        self.gates
+            .register_existing_output_by_index(&mut self.data, request.socket, request.buffer)
     }
 
     /// tick the current world

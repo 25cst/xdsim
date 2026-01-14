@@ -23,6 +23,12 @@ pub struct PackageIndexBuilder {
     errors: Vec<indexer::Error>,
 }
 
+impl Default for PackageIndexBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PackageIndexBuilder {
     /// create new instance
     pub fn new() -> Self {

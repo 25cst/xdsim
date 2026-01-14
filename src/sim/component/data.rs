@@ -30,6 +30,10 @@ impl SimData {
         }
     }
 
+    /// # Safety
+    ///
+    /// Using the pointer irresponsibly will cause hard to debug memory issues
+    ///
     /// Get pointer to the underlying data
     pub unsafe fn get_data_ptr(&self) -> DataPtr {
         unsafe { mem::transmute(self.data_ptr) }

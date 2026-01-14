@@ -5,9 +5,10 @@
 //! - if an input is not connected to a powered buffer (one that is connected to an output), it
 //!   will assume the default value of the data
 
-mod component;
+pub mod component;
 mod error;
 mod requests;
 mod world;
 pub use error::Error;
+pub use requests::*;
 pub use world::master;

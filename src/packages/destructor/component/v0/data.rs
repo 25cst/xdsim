@@ -6,10 +6,10 @@ use xdsim_cbinds::{
 use crate::packages::destructor::{self, DestructRequest};
 
 pub struct DestructedData {
-    pub serialize: fn(Data) -> Slice,
-    pub deserialize: fn(*const Slice) -> DataMut,
-    pub default_value: fn() -> DataMut,
-    pub drop_mem: fn(DataMut),
+    pub serialize: extern "C" fn(Data) -> Slice,
+    pub deserialize: extern "C" fn(*const Slice) -> DataMut,
+    pub default_value: extern "C" fn() -> DataMut,
+    pub drop_mem: extern "C" fn(DataMut),
 }
 
 impl DestructedData {
