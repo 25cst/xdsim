@@ -1,4 +1,9 @@
-use std::{collections::HashMap, env::consts::DLL_EXTENSION, path::PathBuf, rc::Rc};
+use std::{
+    collections::{BTreeMap, HashMap},
+    env::consts::DLL_EXTENSION,
+    path::PathBuf,
+    rc::Rc,
+};
 
 use semver::Version;
 
@@ -16,9 +21,9 @@ type PackageVersion = Version;
 type LibName = String;
 
 type DestructedGateHandles =
-    HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, Rc<DestructedGate>>>>;
+    HashMap<PackageName, BTreeMap<PackageVersion, HashMap<LibName, Rc<DestructedGate>>>>;
 type DestructedDataHandles =
-    HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, Rc<DestructedData>>>>;
+    HashMap<PackageName, BTreeMap<PackageVersion, HashMap<LibName, Rc<DestructedData>>>>;
 
 struct LoadedEntry {
     pub variant: PackageComponentType,
@@ -112,7 +117,7 @@ impl IndexComponentLoader {
             variant: PackageComponentType,
             index: &HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, LoadedEntry>>>,
             errors: &mut Vec<loader::Error>,
-        ) -> HashMap<PackageName, HashMap<PackageVersion, HashMap<LibName, Rc<T>>>> {
+        ) -> HashMap<PackageName, BTreeMap<PackageVersion, HashMap<LibName, Rc<T>>>> {
             index
                 .iter()
                 .map(|(package_name, versions)| {
@@ -158,7 +163,7 @@ impl IndexComponentLoader {
                                         .collect::<HashMap<_, _>>(),
                                 )
                             })
-                            .collect::<HashMap<_, _>>(),
+                            .collect::<BTreeMap<_, _>>(),
                     )
                 })
                 .collect::<HashMap<_, _>>()

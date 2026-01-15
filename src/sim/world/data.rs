@@ -1,18 +1,15 @@
 use std::{
     collections::{HashMap, HashSet},
-    mem,
     rc::Rc,
 };
 
-#[cfg(test)]
-use crate::common::world::DataPtr;
 use crate::{
     common::world::{
         ComponentId, ComponentIdIncrementer, ComponentVersion, ComponentVersionReq,
         GateInputSocket, GateOutputSocket,
     },
     packages::destructor::DestructedData,
-    sim::{self, component::SimData, requests::DestructedDataHandles, world::*},
+    sim::{self, component::SimData, requests::DestructedDataHandles},
 };
 
 struct RegisteredBuffer {
@@ -189,7 +186,7 @@ impl WorldStateData {
         self.handles
             .get(&component_req.package)?
             .iter()
-            .find(|(version, _)| component_req.version_req.matches(version))?
+            .rfind(|(version, _)| component_req.version_req.matches(version))?
             .1
             .get(&component_req.component)
     }
@@ -361,14 +358,13 @@ impl WorldStateData {
         buffer.remove_consumer(buffer_id, consumer_socket)
     }
 
-    #[cfg(test)]
     /// # Safety
     ///
     /// the pointer has not safety guarantees besides that it is valid, you may not modify or drop
     /// the pointer
     ///
     /// get data
-    pub unsafe fn get_data_ptr(&self, buffer_id: &ComponentId) -> Option<DataPtr> {
-        Some(unsafe { self.buffers.get(buffer_id)?.read_only.get_data_ptr() })
+    pub fn get_data(&self, buffer_id: &ComponentId) -> Option<&SimData> {
+        Some(&self.buffers.get(buffer_id)?.read_only)
     }
 }

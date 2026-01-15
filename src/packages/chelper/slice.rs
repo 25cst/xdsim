@@ -1,3 +1,5 @@
+//! Functions for dealing with the Slice/Str types
+
 use std::{
     ffi::{CStr, c_void},
     ptr,
@@ -5,6 +7,7 @@ use std::{
 
 use xdsim_cbinds::common::{Slice, Str};
 
+/// Drop a vector containing only structs declared in rust
 extern "C" fn vec_drop_rustonly<T>(vec_ptr: *mut c_void, _item_size: u64, len: u64) {
     let thin_ptr = vec_ptr as *mut T;
     let fat_ptr: *mut [T] = ptr::slice_from_raw_parts_mut(thin_ptr, len as usize);
@@ -25,12 +28,14 @@ pub fn from_vec_rustonly<T>(vec: Vec<T>) -> Slice {
     }
 }
 
+/// Convert &Str to String (creates a copy)
 pub fn from_str(original: &Str) -> String {
     unsafe { CStr::from_ptr(original.first) }
         .to_string_lossy()
         .to_string()
 }
 
+/// Convert &Slice to &[T] (will become invalid after Slice is dropped)
 pub fn from_slice<T>(original: &Slice) -> &[T] {
     unsafe { std::slice::from_raw_parts(original.first as *const T, original.length as usize) }
 }

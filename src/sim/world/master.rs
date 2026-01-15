@@ -1,3 +1,6 @@
+//! The world state is a collection of components that connect to each other.
+//!
+//! The world state responds to messages defined in sim::requests
 use semver::Version;
 
 #[cfg(test)]
@@ -6,6 +9,7 @@ use crate::{
     common::world::{ComponentId, ComponentIdIncrementer},
     sim::{
         self,
+        component::SimData,
         requests::*,
         world::{data::WorldStateData, gates::WorldStateGates},
     },
@@ -79,14 +83,13 @@ impl WorldState {
         res
     }
 
-    #[cfg(test)]
     /// # Safety
     ///
     /// the pointer has not safety guarantees besides that it is valid, you may not modify or drop
     /// the pointer
     ///
     /// get data
-    pub unsafe fn get_data_ptr(&self, buffer_id: &ComponentId) -> Option<DataPtr> {
-        unsafe { self.data.get_data_ptr(buffer_id) }
+    pub fn get_data(&self, buffer_id: &ComponentId) -> Option<&SimData> {
+        self.data.get_data(buffer_id)
     }
 }

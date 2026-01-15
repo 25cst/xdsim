@@ -176,7 +176,7 @@ pub fn tick_not_gate_multiple() {
 
     macro_rules! get_data {
         () => {
-            unsafe { *(world.get_data_ptr(&buffer).unwrap() as *const u8) }
+            unsafe { *(world.get_data(&buffer).unwrap().get_data_ptr() as *const u8) }
         };
     }
 

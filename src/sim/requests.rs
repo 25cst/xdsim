@@ -1,4 +1,8 @@
-use std::{collections::HashMap, rc::Rc};
+//! Requests to poke the world state to do stuff.
+use std::{
+    collections::{BTreeMap, HashMap},
+    rc::Rc,
+};
 
 use semver::Version;
 
@@ -8,15 +12,15 @@ use crate::{
 };
 
 pub type DestructedGateHandles =
-    HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedGate>>>>;
+    HashMap<PackageName, BTreeMap<PackageVersion, HashMap<ComponentName, Rc<DestructedGate>>>>;
 pub type DestructedDataHandles =
-    HashMap<PackageName, HashMap<PackageVersion, HashMap<ComponentName, Rc<DestructedData>>>>;
+    HashMap<PackageName, BTreeMap<PackageVersion, HashMap<ComponentName, Rc<DestructedData>>>>;
 
 pub type PackageName = String;
 pub type PackageVersion = Version;
 pub type ComponentName = String;
 
-/// WorldState::new_blank(CreateBlankWorld) -> WorldState
+/// `WorldState::new_blank(CreateBlankWorld) -> WorldState`
 pub struct CreateBlankWorld {
     /// All the data that can be used in the world
     pub data_handles: DestructedDataHandles,
@@ -25,6 +29,7 @@ pub struct CreateBlankWorld {
 }
 
 impl CreateBlankWorld {
+    /// Create a world state with no gates
     pub fn empty() -> Self {
         Self {
             data_handles: HashMap::new(),
@@ -33,22 +38,30 @@ impl CreateBlankWorld {
     }
 }
 
-/// WorldState::create_default_gate(CreateDefaultGate) -> Result&lt;ComponentId&gt;
+/// `WorldState::create_default_gate(CreateDefaultGate) -> Result&lt;ComponentId&gt;`
 pub struct CreateDefaultGate {
     /// Identifier of the gate type
     pub gate: ComponentVersion,
 }
 
+/// `WorldState::register_new_gate_output(RegisterNewGateOutput) -> Result&lt;ComponentId&gt;`
 pub struct RegisterNewGateOutput {
+    /// Socket of gate that will be connected to the buffer
     pub socket: GateOutputSocket,
 }
 
+/// `WorldState::register_existing_gate_output(RegisterExistingGateOutput) -> Result&lt;()&gt;`
 pub struct RegisterExistingGateOutput {
+    /// Socket of gate that will be connected to the buffer
     pub socket: GateOutputSocket,
+    /// Id of the buffer to put outputs to
     pub buffer: ComponentId,
 }
 
+/// `WorldState::register_existing_gate_input(RegisterExistingGateInput) -> Result&lt;()&gt;`
 pub struct RegisterExistingGateInput {
+    /// Socket of gate that will be connected to the buffer
     pub socket: GateInputSocket,
+    /// Id of the buffer to take inputs to
     pub buffer: ComponentId,
 }

@@ -1,4 +1,4 @@
-//! this module contains simulation logic for data, gate and connection
+//! This module contains simulation logic for data, gate and connection
 mod data;
 pub use data::SimData;
 mod gate;
