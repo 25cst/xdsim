@@ -2,7 +2,7 @@
 //!
 //! The world state responds to messages defined in sim::requests
 use crate::{
-    common::world::{ComponentId, ComponentIdIncrementer, GateInputSocket, GateOutputSocket},
+    common::world::{ComponentId, ComponentIdIncrementer, GateOutputSocket},
     sim::{
         self,
         component::SimData,
@@ -57,11 +57,8 @@ impl WorldState {
 
     /// connect an input socket to an output socket,
     /// requires: the input socket to not previously be connected to any other sockets
-    pub fn connect_gates(
-        &mut self,
-        output_socket: GateOutputSocket,
-        input_socket: GateInputSocket,
-    ) -> Result<(), Box<sim::Error>> {
-        self.gates.connect(output_socket, input_socket)
+    pub fn connect_gates(&mut self, request: ConnectIOSockets) -> Result<(), Box<sim::Error>> {
+        self.gates
+            .connect(request.output_socket, request.input_socket)
     }
 }

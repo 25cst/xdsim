@@ -119,10 +119,10 @@ pub fn tick_not_gate_multiple() {
         .unwrap();
 
     world
-        .connect_gates(
-            GateOutputSocket::new(not_gate, 0),
-            GateInputSocket::new(not_gate, 0),
-        )
+        .connect_gates(ConnectIOSockets {
+            output_socket: GateOutputSocket::new(not_gate, 0),
+            input_socket: GateInputSocket::new(not_gate, 0),
+        })
         .unwrap();
 
     macro_rules! get_data {

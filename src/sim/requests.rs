@@ -7,7 +7,7 @@ use std::{
 use semver::Version;
 
 use crate::{
-    common::world::{ComponentId, ComponentVersion, GateInputSocket, GateOutputSocket},
+    common::world::{ComponentVersion, GateInputSocket, GateOutputSocket},
     packages::destructor::{DestructedData, DestructedGate},
 };
 
@@ -44,24 +44,9 @@ pub struct CreateDefaultGate {
     pub gate: ComponentVersion,
 }
 
-/// `WorldState::register_new_gate_output(RegisterNewGateOutput) -> Result&lt;ComponentId&gt;`
-pub struct RegisterNewGateOutput {
-    /// Socket of gate that will be connected to the buffer
-    pub socket: GateOutputSocket,
-}
-
-/// `WorldState::register_existing_gate_output(RegisterExistingGateOutput) -> Result&lt;()&gt;`
-pub struct RegisterExistingGateOutput {
-    /// Socket of gate that will be connected to the buffer
-    pub socket: GateOutputSocket,
-    /// Id of the buffer to put outputs to
-    pub buffer: ComponentId,
-}
-
-/// `WorldState::register_existing_gate_input(RegisterExistingGateInput) -> Result&lt;()&gt;`
-pub struct RegisterExistingGateInput {
-    /// Socket of gate that will be connected to the buffer
-    pub socket: GateInputSocket,
-    /// Id of the buffer to take inputs to
-    pub buffer: ComponentId,
+/// `WorldState::connect_gates(ConnectIOSockets)  -> Result&lt;()&gt;`
+pub struct ConnectIOSockets {
+    // self explanatory
+    pub input_socket: GateInputSocket,
+    pub output_socket: GateOutputSocket,
 }
