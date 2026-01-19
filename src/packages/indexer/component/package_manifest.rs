@@ -21,10 +21,6 @@ impl PackageManifest {
         &self.package.version
     }
 
-    pub fn get_info(&self) -> &PackageInfo {
-        &self.package
-    }
-
     pub fn get_provides(&self) -> &HashMap<String, PackageComponentType> {
         &self.provides
     }
@@ -40,7 +36,7 @@ impl PackageManifest {
 /// the struct exists solely to add structure to the toml file
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "devel", derive(Debug))]
-pub struct PackageInfo {
+struct PackageInfo {
     pub name: String,
     pub version: Version,
 }
