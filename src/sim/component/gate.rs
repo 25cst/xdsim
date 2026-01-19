@@ -73,16 +73,12 @@ impl SimGate {
         world_data: &WorldStateData,
     ) -> Result<Self, Box<sim::Error>> {
         let gate_ptr = handle.default_value();
-        let definition = match handle.normalised_definition(gate_ptr) {
-            Ok(def) => def,
-            Err(e) => {
-                return Err(sim::Error::GateDefinition {
-                    component: handle.id().clone(),
-                    reason: e.to_string(),
-                }
-                .into());
-            }
-        };
+        let definition = handle.normalised_definition(gate_ptr).map_err(|e| {
+            Box::new(sim::Error::GateDefinition {
+                component: handle.id().clone(),
+                reason: e.to_string(),
+            })
+        })?;
 
         let mut inputs = Vec::with_capacity(definition.inputs.len());
 
@@ -225,15 +221,14 @@ impl SimGate {
         output_socket: GateOutputSocket,
         output_type: &Rc<DestructedData>,
     ) -> Result<(), Box<sim::Error>> {
-        let input_entry = match self.inputs.get_mut(input_socket.get_index()) {
-            Some(input) => input,
-            None => {
-                return Err(sim::Error::InputSocketNotFound {
+        let input_entry = self
+            .inputs
+            .get_mut(input_socket.get_index())
+            .ok_or_else(|| {
+                Box::new(sim::Error::InputSocketNotFound {
                     input_socket: *input_socket,
-                }
-                .into());
-            }
-        };
+                })
+            })?;
 
         match input_entry.status {
             SimGateInputEntryStatus::Unbound => {
@@ -268,15 +263,14 @@ impl SimGate {
         output_socket: &GateOutputSocket,
         input_socket: GateInputSocket,
     ) -> Result<(), Box<sim::Error>> {
-        let output_entry = match self.outputs.get_mut(output_socket.get_index()) {
-            Some(input) => input,
-            None => {
-                return Err(sim::Error::OutputSocketNotFound {
+        let output_entry = self
+            .outputs
+            .get_mut(output_socket.get_index())
+            .ok_or_else(|| {
+                Box::new(sim::Error::OutputSocketNotFound {
                     output_socket: *output_socket,
-                }
-                .into());
-            }
-        };
+                })
+            })?;
 
         if output_entry.dependents.insert(input_socket) {
             Ok(())

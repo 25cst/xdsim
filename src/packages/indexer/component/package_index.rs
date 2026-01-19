@@ -22,12 +22,6 @@ impl PackageIndex {
     pub fn get_package(&self, name: &str) -> Option<&Package> {
         self.packages.get(name)
     }
-
-    /*
-    pub fn get_data(&self) -> Vec<(ComponentLibPatchId, PathBuf)> {
-
-    }
-    */
 }
 
 #[cfg_attr(feature = "devel", derive(Debug))]

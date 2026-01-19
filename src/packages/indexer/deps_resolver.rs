@@ -54,29 +54,15 @@ pub fn deps_resolver<I: DepsResolvable>(
         }
 
         // see available versions
-        let versions = match resolvable.get_versions(request_name) {
-            Some(versions) => versions,
-            None => {
-                return Err(vec![vec![(
-                    request_name.to_string(),
-                    request_version.clone(),
-                )]]);
-            }
-        };
+        let versions = resolvable
+            .get_versions(request_name)
+            .ok_or_else(|| vec![vec![(request_name.to_string(), request_version.clone())]])?;
 
         // pick the version to load
-        let accepted_version = match versions
+        let accepted_version = versions
             .iter()
             .find(|version| request_version.matches(version))
-        {
-            Some(accepted_version) => accepted_version,
-            None => {
-                return Err(vec![vec![(
-                    request_name.to_string(),
-                    request_version.clone(),
-                )]]);
-            }
-        };
+            .ok_or_else(|| vec![vec![(request_name.to_string(), request_version.clone())]])?;
 
         // add version to resolved list of packages
         resolved
@@ -86,12 +72,8 @@ pub fn deps_resolver<I: DepsResolvable>(
 
         let mut missings = Vec::new();
 
-        let deps = match resolvable.get_dependencies(request_name, accepted_version) {
-            Some(deps) => deps,
-            None => unreachable!(
-                "the package with this name and version should guarantee to exist (because of previous step)"
-            ),
-        };
+        let deps = resolvable.get_dependencies(request_name, accepted_version)
+            .expect("the package with this name and version should guarantee to exist (because of previous step)");
 
         // look for dependencies of this package
         for (dep_name, dep_version) in deps {

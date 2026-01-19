@@ -96,16 +96,13 @@ impl DestructedGate {
                     data_type_req: ComponentVersionReq {
                         package: slice::from_str(package),
                         component: slice::from_str(component),
-                        version_req: match VersionReq::parse(&slice::from_str(version)) {
-                            Ok(v) => v,
-                            Err(e) => {
-                                return Err(destructor::Error::InvalidVersionReq {
-                                    component: Box::new(gate_id.clone()),
-                                    version: slice::from_str(version),
-                                    reason: e.to_string(),
-                                });
+                        version_req: VersionReq::parse(&slice::from_str(version)).map_err(|e| {
+                            destructor::Error::InvalidVersionReq {
+                                component: Box::new(gate_id.clone()),
+                                version: slice::from_str(version),
+                                reason: e.to_string(),
                             }
-                        },
+                        })?,
                     },
                     position: *position,
                 })
@@ -137,16 +134,13 @@ impl DestructedGate {
                     data_type: ComponentVersion {
                         package: slice::from_str(package),
                         component: slice::from_str(component),
-                        version: match Version::parse(&slice::from_str(version)) {
-                            Ok(v) => v,
-                            Err(e) => {
-                                return Err(destructor::Error::InvalidVersionReq {
-                                    component: Box::new(gate_id.clone()),
-                                    version: slice::from_str(version),
-                                    reason: e.to_string(),
-                                });
+                        version: Version::parse(&slice::from_str(version)).map_err(|e| {
+                            destructor::Error::InvalidVersionReq {
+                                component: Box::new(gate_id.clone()),
+                                version: slice::from_str(version),
+                                reason: e.to_string(),
                             }
-                        },
+                        })?,
                     },
                     position: *position,
                 })

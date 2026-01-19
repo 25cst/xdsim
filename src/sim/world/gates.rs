@@ -48,10 +48,8 @@ impl WorldStateGates {
                 .get(&gate.component)
         }
 
-        let handle = match get_handle(&self.handles, &gate) {
-            Some(found) => found,
-            None => return Err(sim::Error::GateTypeNotFound { gate_type: gate }.into()),
-        };
+        let handle = get_handle(&self.handles, &gate)
+            .ok_or_else(|| Box::new(sim::Error::GateTypeNotFound { gate_type: gate }))?;
 
         let created_gate = SimGate::new_default(handle.clone(), world_data)?;
         let new_gate_id = id_counter.get();

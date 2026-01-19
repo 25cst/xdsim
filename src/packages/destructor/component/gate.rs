@@ -83,14 +83,6 @@ impl DestructedGate {
         }
     }
 
-    /*
-    pub fn definition(&self, gate: GatePtr) -> GateDefinition {
-        match &self.handle {
-            DestructedGateHandle::V0(handle) => (handle.definition)(gate),
-        }
-    }
-    */
-
     /// Returns a gate definition that is the same for all versions of gates
     pub fn normalised_definition(
         &self,
