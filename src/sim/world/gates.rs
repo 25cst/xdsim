@@ -1,8 +1,4 @@
-use std::{
-    cell::UnsafeCell,
-    collections::{HashMap, HashSet},
-    rc::Rc,
-};
+use std::{cell::UnsafeCell, collections::HashMap, rc::Rc};
 
 use crate::{
     common::world::{
@@ -14,7 +10,7 @@ use crate::{
         component::{SimData, SimGate},
         error::TickAllErrorEntry,
         requests::DestructedGateHandles,
-        world::{data::WorldStateData, *},
+        world::data::WorldStateData,
     },
 };
 
@@ -75,7 +71,7 @@ impl WorldStateGates {
             // the only variable that will be mutated are write_only buffers
             // they will be written once only in a tick, and will not be read from
             // all other variables are to remain unchanged
-            if let Err(e) = unsafe { &mut *gate.get() }.tick(&self, gate_id) {
+            if let Err(e) = unsafe { &mut *gate.get() }.tick(self, gate_id) {
                 tick_errors.push(TickAllErrorEntry::new(*gate_id, *e));
             }
         }
@@ -102,6 +98,8 @@ impl WorldStateGates {
             .get_output(output_socket.get_index())
     }
 
+    /// connect an input socket to an output socket,
+    /// requires: the input socket to not previously be connected to any other sockets
     pub fn connect(
         &mut self,
         output_socket: GateOutputSocket,

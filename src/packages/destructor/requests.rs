@@ -1,5 +1,3 @@
-use std::path::{Path, PathBuf};
-
 use crate::{common::world::ComponentVersion, packages::loader::LibraryHandle};
 
 pub struct DestructRequest {

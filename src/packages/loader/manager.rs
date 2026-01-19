@@ -1,7 +1,4 @@
-use std::{
-    env::consts::DLL_EXTENSION,
-    path::{Path, PathBuf},
-};
+use std::{env::consts::DLL_EXTENSION, path::PathBuf};
 
 use libloading::Library;
 

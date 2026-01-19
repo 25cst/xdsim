@@ -1,15 +1,9 @@
-use std::{
-    collections::{HashMap, HashSet},
-    rc::Rc,
-};
+use std::rc::Rc;
 
 use crate::{
-    common::world::{
-        ComponentId, ComponentIdIncrementer, ComponentVersion, ComponentVersionReq,
-        GateInputSocket, GateOutputSocket,
-    },
+    common::world::{ComponentVersion, ComponentVersionReq},
     packages::destructor::DestructedData,
-    sim::{self, component::SimData, requests::DestructedDataHandles},
+    sim::requests::DestructedDataHandles,
 };
 
 pub struct WorldStateData {

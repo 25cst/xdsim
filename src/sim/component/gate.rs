@@ -1,14 +1,9 @@
-use std::{
-    cell::UnsafeCell,
-    collections::{HashMap, HashSet},
-    ffi::c_void,
-    rc::Rc,
-};
+use std::{collections::HashSet, rc::Rc};
 
 use crate::{
     common::world::{
-        ComponentId, ComponentIdIncrementer, ComponentVersion, ComponentVersionReq, DataPtr,
-        DataPtrMut, GateInputSocket, GateOutputSocket, GatePtrMut,
+        ComponentId, ComponentVersion, ComponentVersionReq, DataPtrMut, GateInputSocket,
+        GateOutputSocket, GatePtrMut,
     },
     packages::{
         chelper::slice,
@@ -222,6 +217,8 @@ impl SimGate {
         }
     }
 
+    /// connect an input (of this gate) to an output (of another gate).
+    /// this also checks if their types are compatible
     pub fn connect_input_to(
         &mut self,
         input_socket: &GateInputSocket,
@@ -255,16 +252,17 @@ impl SimGate {
                 Ok(())
             }
             SimGateInputEntryStatus::Bound { source, .. } => {
-                return Err(sim::Error::InputSocketDoubleBound {
+                Err(sim::Error::InputSocketDoubleBound {
                     input_socket: *input_socket,
                     current_output_source: source,
                     new_output_source: output_socket,
                 }
-                .into());
+                .into())
             }
         }
     }
 
+    /// connect an output (of this gate) to an input (of another gate)
     pub fn output_connected_from(
         &mut self,
         output_socket: &GateOutputSocket,
@@ -291,6 +289,9 @@ impl SimGate {
         }
     }
 
+    /// gate data type (destructed gate) of an output index of this gate,
+    /// it does not check if the component id in the output socket if correct,
+    /// you will have to make sure that is the case yourself
     pub fn get_output_type(
         &self,
         output_socket: &GateOutputSocket,

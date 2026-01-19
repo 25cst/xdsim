@@ -55,6 +55,8 @@ impl WorldState {
         self.gates.get_output(output_socket)
     }
 
+    /// connect an input socket to an output socket,
+    /// requires: the input socket to not previously be connected to any other sockets
     pub fn connect_gates(
         &mut self,
         output_socket: GateOutputSocket,
