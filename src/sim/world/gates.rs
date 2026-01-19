@@ -1,4 +1,5 @@
 use std::{
+    cell::UnsafeCell,
     collections::{HashMap, HashSet},
     rc::Rc,
 };
@@ -10,7 +11,7 @@ use crate::{
     packages::destructor::DestructedGate,
     sim::{
         self,
-        component::SimGate,
+        component::{SimData, SimGate},
         error::TickAllErrorEntry,
         requests::DestructedGateHandles,
         world::{data::WorldStateData, *},
@@ -22,7 +23,7 @@ pub struct WorldStateGates {
     handles: DestructedGateHandles,
 
     /// all gates in world
-    gates: HashMap<ComponentId, SimGate>,
+    gates: HashMap<ComponentId, UnsafeCell<SimGate>>,
 }
 
 impl WorldStateGates {
@@ -59,90 +60,29 @@ impl WorldStateGates {
         let created_gate = SimGate::new_default(handle.clone(), world_data)?;
         let new_gate_id = id_counter.get();
 
-        self.gates.insert(new_gate_id, created_gate);
+        self.gates
+            .insert(new_gate_id, UnsafeCell::new(created_gate));
         Ok(new_gate_id)
-    }
-
-    /// Registers a new output (thus creating a never-before-existed buffer)
-    pub fn register_new_output(
-        &mut self,
-        world_data: &mut WorldStateData,
-        gate_output_socket: GateOutputSocket,
-        id_counter: &mut ComponentIdIncrementer,
-    ) -> Result<ComponentId, Box<sim::Error>> {
-        match self.gates.get_mut(gate_output_socket.get_id()) {
-            Some(gate) => gate.register_new_output(world_data, gate_output_socket, id_counter),
-            None => Err(sim::Error::GateNotFound {
-                gate_id: *gate_output_socket.get_id(),
-            }
-            .into()),
-        }
-    }
-
-    /// Registers an output given a buffer id (outputs to an existing buffer)
-    pub fn register_existing_output(
-        &mut self,
-        world_data: &mut WorldStateData,
-        gate_output_socket: GateOutputSocket,
-        target_buffer_id: ComponentId,
-    ) -> Result<(), Box<sim::Error>> {
-        match self.gates.get_mut(gate_output_socket.get_id()) {
-            Some(gate) => {
-                gate.register_existing_output(world_data, gate_output_socket, target_buffer_id)
-            }
-            None => Err(sim::Error::GateNotFound {
-                gate_id: *gate_output_socket.get_id(),
-            }
-            .into()),
-        }
-    }
-
-    /// - Unregister an output: the output is not longer connected to a buffer
-    /// - By index: the index of the output in the definition array
-    ///
-    /// Returns the ID of the buffer that the gate originally outputs to
-    pub fn unregister_output(
-        &mut self,
-        world_data: &mut WorldStateData,
-        gate_output_socket: &GateOutputSocket,
-    ) -> Result<ComponentId, Box<sim::Error>> {
-        match self.gates.get_mut(gate_output_socket.get_id()) {
-            Some(gate) => gate.unregister_output(world_data, gate_output_socket),
-            None => Err(sim::Error::GateNotFound {
-                gate_id: *gate_output_socket.get_id(),
-            }
-            .into()),
-        }
-    }
-
-    /// Registers an output given a buffer id (outputs to an existing buffer)
-    pub fn register_existing_input(
-        &mut self,
-        world_data: &mut WorldStateData,
-        gate_input_socket: GateInputSocket,
-        source_buffer_id: ComponentId,
-    ) -> Result<(), Box<sim::Error>> {
-        match self.gates.get_mut(gate_input_socket.get_id()) {
-            Some(gate) => {
-                gate.register_existing_input(world_data, gate_input_socket, source_buffer_id)
-            }
-            None => Err(sim::Error::GateNotFound {
-                gate_id: *gate_input_socket.get_id(),
-            }
-            .into()),
-        }
     }
 
     // strictly speaking the compiler doesnt require this to SimGate::tick to be mut
     // but I've marked it as so because it would make sense
     // if it is causing trouble, we can remove it
-    pub fn tick_all(&mut self, world_data: &mut WorldStateData) -> Result<(), Box<sim::Error>> {
+    pub fn tick_all(&mut self) -> Result<(), Box<sim::Error>> {
         let mut tick_errors = Vec::new();
 
-        for (gate_id, gate) in self.gates.iter_mut() {
-            if let Err(e) = gate.tick(world_data, gate_id) {
+        for (gate_id, gate) in self.gates.iter() {
+            // the only variable that will be mutated are write_only buffers
+            // they will be written once only in a tick, and will not be read from
+            // all other variables are to remain unchanged
+            if let Err(e) = unsafe { &mut *gate.get() }.tick(&self, gate_id) {
                 tick_errors.push(TickAllErrorEntry::new(*gate_id, *e));
             }
+        }
+
+        // flush is in the same funciton as tick_all, because it is ran only after ticking
+        for gate in self.gates.values_mut() {
+            gate.get_mut().flush();
         }
 
         if tick_errors.is_empty() {
@@ -153,5 +93,38 @@ impl WorldStateGates {
             }
             .into())
         }
+    }
+
+    /// get the output of a socket
+    pub fn get_output(&self, output_socket: &GateOutputSocket) -> Option<&SimData> {
+        // unsafe ok because it is treating self as immutable
+        unsafe { &*self.gates.get(output_socket.get_id())?.get() }
+            .get_output(output_socket.get_index())
+    }
+
+    pub fn connect(
+        &mut self,
+        output_socket: GateOutputSocket,
+        input_socket: GateInputSocket,
+    ) -> Result<(), Box<sim::Error>> {
+        // the unsafes are fine because we are modifying dependents in output gate
+        // and source in input gate
+        let input_gate = match self.gates.get(input_socket.get_id()) {
+            Some(gate) => unsafe { &mut *gate.get() },
+            None => return Err(sim::Error::InputSocketNotFound { input_socket }.into()),
+        };
+
+        let output_gate = match self.gates.get(output_socket.get_id()) {
+            Some(gate) => unsafe { &mut *gate.get() },
+            None => return Err(sim::Error::OutputSocketNotFound { output_socket }.into()),
+        };
+
+        input_gate.connect_input_to(
+            &input_socket,
+            output_socket,
+            output_gate.get_output_type(&output_socket)?,
+        )?;
+
+        output_gate.output_connected_from(&output_socket, input_socket)
     }
 }

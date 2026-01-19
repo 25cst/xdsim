@@ -35,12 +35,6 @@ pub enum Error {
         gate_socket: GateInputSocket,
         output_list_length: usize,
     },
-    /// Trying to register two producers for a buffer
-    BufferDoubleProducerRegister {
-        gate_type: ComponentVersion,
-        gate_socket: GateOutputSocket,
-        buffer_id: ComponentId,
-    },
     /// Registering an input for a gate when it is already registered to an input
     GateInputDoubleRegister {
         gate_type: ComponentVersion,
@@ -63,43 +57,25 @@ pub enum Error {
     },
     /// No gate with requested ID in world
     GateNotFound { gate_id: ComponentId },
-    /// No buffer with requested ID in world
-    BufferNotFound { buffer_id: ComponentId },
-    /// A buffer is written to twice in a single tick, which is not allowed
-    BufferDoubleWrite { buffer_id: ComponentId },
-    /// Requested to remove buffer producer, but the buffer does not have a producer
-    BufferNoProducerToRemove { buffer_id: ComponentId },
-    /// basic type error when socket and buffer type mismatches
-    BufferTypeMismatch {
-        buffer_id: ComponentId,
-        /// buffer type
-        expected_type: ComponentVersion,
-        /// producer socket type
-        got_type: ComponentVersion,
+    /// An input is bound to an output socket, but that output socket does not exist
+    OutputSocketNotFound { output_socket: GateOutputSocket },
+    /// an input socket is bound to the same output 2 times
+    OutputSocketDoubleBound {
+        input_socket: GateInputSocket,
+        output_socket: GateOutputSocket,
     },
-    /// basic type error when socket (request) and buffer type (concrete) mismatches
-    BufferTypeReqMismatch {
-        buffer_id: ComponentId,
-        /// consumer socket type
-        expected_type: ComponentVersionReq,
-        /// buffer type
-        got_type: ComponentVersion,
+    /// An input is bound to an output socket, but that input socket does not exist
+    InputSocketNotFound { input_socket: GateInputSocket },
+    /// An input is already bound to an output, but it is requested to bound to another output
+    InputSocketDoubleBound {
+        input_socket: GateInputSocket,
+        current_output_source: GateOutputSocket,
+        new_output_source: GateOutputSocket,
     },
-    /// trying to remove a nonexistend consumer
-    ///
-    /// this should never happen as the case would've already been covered by SimGate, but I
-    /// decided to also make WorldData satisfy constraints if SimGate goes wrong
-    BufferConsumerToRemoveNonexistent {
-        buffer_id: ComponentId,
-        consumer_socket: GateInputSocket,
-    },
-    /// trying to add an already existing consumer
-    ///
-    /// this should never happen as the case would've already been covered by SimGate, but I
-    /// decided to also make WorldData satisfy constraints if SimGate goes wrong
-    BufferDoubleConsumerRegister {
-        buffer_id: ComponentId,
-        consumer_socket: GateInputSocket,
+    /// An input socket is connected to an output socket but their data_types do not match
+    IOTypeMismatch {
+        input_socket: GateInputSocket,
+        output_socket: GateOutputSocket,
     },
 }
 
