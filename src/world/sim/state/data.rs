@@ -3,7 +3,7 @@ use std::rc::Rc;
 use crate::{
     common::world::{ComponentVersion, ComponentVersionReq},
     packages::destructor::DestructedData,
-    sim::requests::DestructedDataHandles,
+    world::sim::requests::DestructedDataHandles,
 };
 
 pub struct WorldStateData {

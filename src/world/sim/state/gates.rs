@@ -5,12 +5,12 @@ use crate::{
         ComponentId, ComponentIdIncrementer, ComponentVersion, GateInputSocket, GateOutputSocket,
     },
     packages::destructor::DestructedGate,
-    sim::{
+    world::sim::{
         self,
         component::{SimData, SimGate},
         error::TickAllErrorEntry,
         requests::DestructedGateHandles,
-        world::data::WorldStateData,
+        state::data::WorldStateData,
     },
 };
 

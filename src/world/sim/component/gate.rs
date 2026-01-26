@@ -9,10 +9,10 @@ use crate::{
         chelper::slice,
         destructor::{DestructedData, DestructedGate, DestructedGateDefinition},
     },
-    sim::{
+    world::sim::{
         self,
         component::SimData,
-        world::{data::WorldStateData, gates::WorldStateGates},
+        state::{data::WorldStateData, gates::WorldStateGates},
     },
 };
 

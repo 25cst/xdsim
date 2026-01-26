@@ -3,11 +3,11 @@
 //! The world state responds to messages defined in sim::requests
 use crate::{
     common::world::{ComponentId, ComponentIdIncrementer, GateOutputSocket},
-    sim::{
+    world::sim::{
         self,
         component::SimData,
         requests::*,
-        world::{data::WorldStateData, gates::WorldStateGates},
+        state::{data::WorldStateData, gates::WorldStateGates},
     },
 };
 

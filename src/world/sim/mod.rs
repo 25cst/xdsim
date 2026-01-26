@@ -10,6 +10,5 @@
 pub mod component;
 mod error;
 pub mod requests;
-mod world;
+pub mod state;
 pub use error::Error;
-pub use world::master;

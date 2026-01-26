@@ -1,6 +1,6 @@
 pub mod common;
 pub mod packages;
-pub mod sim;
+pub mod world;
 
 #[cfg(test)]
 mod tests;
