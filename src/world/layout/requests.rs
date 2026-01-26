@@ -5,8 +5,10 @@ use std::{
 
 use semver::Version;
 
+use crate::packages::destructor::DestructedConn;
+
 pub type DestructedConnHandles =
-    HashMap<PackageName, BTreeMap<PackageVersion, HashMap<ComponentName, Rc<DestructedGate>>>>;
+    HashMap<PackageName, BTreeMap<PackageVersion, HashMap<ComponentName, Rc<DestructedConn>>>>;
 
 pub type PackageName = String;
 pub type PackageVersion = Version;
