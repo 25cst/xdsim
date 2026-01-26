@@ -71,7 +71,7 @@ impl DestructedGate {
     }
 
     /// the slice is an array of *mut Data
-    pub fn tick(&self, gate: GatePtrMut, inputs: Slice) -> Slice {
+    pub fn tick(&self, gate: GatePtrMut, inputs: *const Slice) -> Slice {
         match &self.handle {
             DestructedGateHandle::V0(handle) => (handle.tick)(gate, inputs),
         }

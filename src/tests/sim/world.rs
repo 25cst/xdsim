@@ -9,7 +9,7 @@ use crate::{
         },
         loader::indexed::component::IndexComponentLoader,
     },
-    world::sim::{requests::*, state::world::WorldState},
+    world::sim::{WorldState, requests::*},
 };
 
 #[test]

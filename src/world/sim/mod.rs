@@ -7,8 +7,10 @@
 //! - if an input is not connected to a powered buffer (one that is connected to an output), it
 //!   will assume the default value of the data
 
-pub mod component;
+mod component;
 mod error;
+mod state;
+pub use component::*;
+pub use state::*;
 pub mod requests;
-pub mod state;
 pub use error::Error;

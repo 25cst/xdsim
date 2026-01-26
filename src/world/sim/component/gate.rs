@@ -12,7 +12,7 @@ use crate::{
     world::sim::{
         self,
         component::SimData,
-        state::{data::WorldStateData, gates::WorldStateGates},
+        state::{WorldStateData, WorldStateGates},
     },
 };
 
@@ -173,7 +173,7 @@ impl SimGate {
                 .collect(),
         );
 
-        let output_slice = self.handle.tick(self.gate_ptr, input_slice);
+        let output_slice = self.handle.tick(self.gate_ptr, &input_slice);
 
         slice::from_slice::<DataPtrMut>(&output_slice)
             .iter()

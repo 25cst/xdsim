@@ -24,6 +24,8 @@ type DestructedGateHandles =
     HashMap<PackageName, BTreeMap<PackageVersion, HashMap<LibName, Rc<DestructedGate>>>>;
 type DestructedDataHandles =
     HashMap<PackageName, BTreeMap<PackageVersion, HashMap<LibName, Rc<DestructedData>>>>;
+type DestructedConnHandles =
+    HashMap<PackageName, BTreeMap<PackageVersion, HashMap<LibName, Rc<DestructedData>>>>;
 
 struct LoadedEntry {
     pub variant: PackageComponentType,

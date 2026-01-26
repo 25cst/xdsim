@@ -1,4 +1,8 @@
 //! This module contains world states: collection of components that connects to each other.
-pub mod data;
-pub mod gates;
-pub mod world;
+mod data;
+mod gates;
+mod world;
+
+pub use data::WorldStateData;
+pub use gates::WorldStateGates;
+pub use world::WorldState;
