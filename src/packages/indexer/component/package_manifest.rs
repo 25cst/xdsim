@@ -48,8 +48,8 @@ pub enum PackageComponentType {
     Gate,
     #[serde(rename = "data")]
     Data,
-    #[serde(rename = "connection")]
-    Connection,
+    #[serde(rename = "conn")]
+    Conn,
 }
 
 impl PackageManifest {}

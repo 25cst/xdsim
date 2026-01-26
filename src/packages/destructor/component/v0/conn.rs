@@ -9,7 +9,7 @@ use xdsim_cbinds::{
 
 use crate::packages::destructor::{self, DestructRequest};
 
-pub struct DestructedConnection {
+pub struct DestructedConn {
     pub draw: extern "C" fn(Connection, *const ConnectionSegment, Data) -> Graphic,
     pub definition: extern "C" fn(Connection) -> ConnectionDefinition,
     pub properties: extern "C" fn(ConnectionMut) -> PropertiesMut,
@@ -19,7 +19,7 @@ pub struct DestructedConnection {
     pub drop_mem: extern "C" fn(ConnectionMut),
 }
 
-impl DestructedConnection {
+impl DestructedConn {
     pub fn new(request: &DestructRequest) -> Result<Self, destructor::Error> {
         Ok(Self {
             draw: *request

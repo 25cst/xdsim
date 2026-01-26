@@ -1,1 +1,3 @@
-pub struct WorldStateConns {}
+pub struct WorldStateConns {
+    handles: DestructedConnHandle
+}

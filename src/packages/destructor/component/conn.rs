@@ -6,16 +6,16 @@ use crate::packages::{
 /// Destructs a library into connection functions
 ///
 /// Note: a copy of library is held for the functions to remain valid
-pub struct DestructedConnection {
+pub struct DestructedConn {
     _library: LibraryHandle,
-    handle: DestructedConnectionHandle,
+    handle: DestructedConnHandle,
 }
 
-pub enum DestructedConnectionHandle {
-    V0(v0::DestructedConnection),
+pub enum DestructedConnHandle {
+    V0(v0::DestructedConn),
 }
 
-impl DestructedConnection {
+impl DestructedConn {
     pub fn new(request: DestructRequest) -> Result<Self, destructor::Error> {
         let get_schema_version: fn() -> u32 = *request
             .get_library()
@@ -23,7 +23,7 @@ impl DestructedConnection {
             .map_err(destructor::Error::from_get_symbol)?;
 
         let handle = match get_schema_version() {
-            0 => DestructedConnectionHandle::V0(v0::DestructedConnection::new(&request)?),
+            0 => DestructedConnHandle::V0(v0::DestructedConn::new(&request)?),
             unsupported_version => {
                 return Err(destructor::Error::UnsupportedSchemaVersion {
                     version: unsupported_version,
