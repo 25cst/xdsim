@@ -4,7 +4,7 @@
 use crate::{
     common::world::{ComponentId, ComponentIdIncrementer, GateOutputSocket},
     world::sim::{
-        self,
+        self, SimGate,
         component::SimData,
         requests::*,
         state::{data::WorldStateData, gates::WorldStateGates},
@@ -53,6 +53,19 @@ impl WorldState {
     /// get data at output socket
     pub fn get_buffer(&self, output_socket: &GateOutputSocket) -> Option<&SimData> {
         self.gates.get_output(output_socket)
+    }
+
+    /// get a gate by ID
+    ///
+    /// # Safety
+    ///
+    /// The gate is no longer valid after it is dropped,
+    /// you should not store the reference
+    pub fn get_gate(&self, gate_id: &ComponentId) -> Result<&SimGate, Box<sim::Error>> {
+        match self.gates.get_gate(gate_id) {
+            Some(gate) => Ok(gate),
+            None => Err(sim::Error::GateNotFound { gate_id: *gate_id }.into()),
+        }
     }
 
     /// connect an input socket to an output socket,

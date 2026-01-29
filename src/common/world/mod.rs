@@ -6,5 +6,5 @@ mod component_lib_id;
 pub use component_lib_id::*;
 mod gate_socket;
 pub use gate_socket::*;
-mod vec;
-pub use vec::*;
+mod layout;
+pub use layout::*;

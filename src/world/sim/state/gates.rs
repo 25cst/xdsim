@@ -96,6 +96,16 @@ impl WorldStateGates {
             .get_output(output_socket.get_index())
     }
 
+    /// get a gate by ID
+    ///
+    /// # Safety
+    ///
+    /// The gate is no longer valid after it is dropped,
+    /// you should not store the reference
+    pub fn get_gate(&self, gate_id: &ComponentId) -> Option<&SimGate> {
+        self.gates.get(gate_id).map(|cell| unsafe { &*cell.get() })
+    }
+
     /// connect an input socket to an output socket,
     /// requires: the input socket to not previously be connected to any other sockets
     pub fn connect(

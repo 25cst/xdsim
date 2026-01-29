@@ -1,6 +1,9 @@
 use crate::common::world::ComponentId;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+/// Identifier for an output socket of a gate
+/// - Id: ID of the gate
+/// - index: the nth output socket of the gate (as per definition)
 pub struct GateOutputSocket {
     id: ComponentId,
     index: usize,
@@ -21,6 +24,9 @@ impl GateOutputSocket {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+/// Identifier for an input socket of a gate
+/// - Id: ID of the gate
+/// - index: the nth output socket of the gate (as per definition)
 pub struct GateInputSocket {
     id: ComponentId,
     index: usize,

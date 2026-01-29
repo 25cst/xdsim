@@ -1,3 +1,5 @@
+mod component;
+mod error;
 mod requests;
 mod state;
-mod component;
+pub use error::*;

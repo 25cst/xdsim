@@ -13,16 +13,19 @@ impl ComponentId {
     }
 }
 
+/// each world has a shared counter to ensure all component IDs are unique
 pub struct ComponentIdIncrementer {
     content: ComponentId,
 }
 
 impl ComponentIdIncrementer {
+    /// get a unique ID
     pub fn get(&mut self) -> ComponentId {
         self.content.increment();
         self.content
     }
 
+    /// get the zero-ed incrementer
     pub fn zero() -> Self {
         Self {
             content: ComponentId::new(0),

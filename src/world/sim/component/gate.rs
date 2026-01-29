@@ -29,6 +29,7 @@ pub struct SimGate {
 }
 
 impl SimGate {
+    /// get gate type identifier
     pub fn get_type(&self) -> &ComponentVersion {
         self.handle.id()
     }
@@ -62,6 +63,12 @@ pub struct SimGateOutputEntry {
 }
 
 impl SimGate {
+    /// get gate definition
+    pub fn get_def(&self) -> &DestructedGateDefinition {
+        &self.definition
+    }
+
+    /// get the data at the index-th output of the gate
     pub fn get_output(&self, index: usize) -> Option<&SimData> {
         Some(&self.outputs.get(index)?.read_only)
     }

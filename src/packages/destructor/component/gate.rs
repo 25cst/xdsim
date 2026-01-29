@@ -32,15 +32,30 @@ pub struct DestructedGateDefinition {
 }
 
 pub struct DestructedGateInputEntry {
+    /// name of the input
     pub name: String,
+    /// requirement for a datatype,
+    /// this is a pattern not a concrete version, because
+    /// the gate might be compatible with multiple versions of the package
+    /// as long as the data have the same byte layout
     pub data_type_req: ComponentVersionReq,
-    pub position: Vec2,
+    /// which side of the bounding box the input is on
+    pub direction: Direction,
+    /// the position of the input: length from the nearest point in the counter
+    /// clockwise direction of the bounding box
+    pub position: f64,
 }
 
 pub struct DestructedGateOutputEntry {
+    /// name of the output
     pub name: String,
+    /// concrete data type: this is not a request
     pub data_type: ComponentVersion,
-    pub position: Vec2,
+    /// which side of the bounding box the output is on
+    pub direction: Direction,
+    /// the position of the output: length from the nearest point in the counter
+    /// clockwise direction of the bounding box
+    pub position: f64,
 }
 
 pub enum DestructedGateHandle {
