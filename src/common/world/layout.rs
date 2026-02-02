@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, AddAssign};
 
 #[derive(Clone, Copy)]
 pub struct Vec2 {
@@ -38,6 +38,13 @@ impl Vec2 {
     }
 }
 
+impl AddAssign for Vec2 {
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
+
 impl Add for Vec2 {
     type Output = Self;
 
@@ -54,6 +61,12 @@ pub enum Direction {
     Right,
     Down,
     Left,
+}
+
+impl Direction {
+    pub fn opposite(&self) -> Self {
+        self.rotate(Rotation::D180)
+    }
 }
 
 impl From<xdsim_cbinds::common::Direction> for Direction {
@@ -78,7 +91,7 @@ pub enum Rotation {
 
 impl Direction {
     /// apply rotation to direction
-    pub fn apply(&self, rotation: Rotation) -> Self {
+    pub fn rotate(&self, rotation: Rotation) -> Self {
         match rotation {
             Rotation::D0 => *self,
             Rotation::D90 => match self {

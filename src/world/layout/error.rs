@@ -11,7 +11,7 @@ pub enum Error {
     /// issues to do with new segment direction, such as:
     /// - new segment same direction as previous segment, which is not allowed
     /// - two segments have the same direction and origin, which is not allowed
-    NewSegmentSameDirection {
+    NewSegmentDirectionConflict {
         segment_id: ComponentId,
         direction: Direction,
     },
@@ -20,6 +20,11 @@ pub enum Error {
     },
     /// segment not exist
     SegmentNotFound {
+        segment_id: ComponentId,
+    },
+    /// operating on a segment that needs to be dangling
+    /// but it is not
+    SegmentNotDangling {
         segment_id: ComponentId,
     },
 }

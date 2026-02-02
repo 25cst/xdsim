@@ -1,6 +1,7 @@
 use std::{
     cell::UnsafeCell,
     collections::{BTreeSet, HashMap, HashSet},
+    mem,
 };
 
 use crate::{
@@ -25,9 +26,6 @@ pub struct LayoutConn {
     consumers: HashSet<GateOutputSocket>,
     /// the actual segments that make up the conn
     segments: HashMap<ComponentId, UnsafeCell<LayoutSegment>>,
-    /*
-    segments: HashMap<ComponentId, UnsafeCell<LayoutSegment>>,
-    */
 }
 
 impl LayoutConn {
@@ -84,6 +82,26 @@ impl LayoutConn {
             )
         }
     }
+
+    /// set length of a segment with a dangling end
+    fn set_length_end_dangling(
+        &mut self,
+        segment_id: &ComponentId,
+        length: f64,
+    ) -> Result<(), Box<layout::Error>> {
+        self.get_mut(segment_id)?
+            .set_length_end_dangling(segment_id, length)
+    }
+
+    /// set length of a segment with a dangling start
+    fn set_length_start_dangling(
+        &mut self,
+        segment_id: &ComponentId,
+        length: f64,
+    ) -> Result<(), Box<layout::Error>> {
+        self.get_mut(segment_id)?
+            .set_length_start_dangling(segment_id, length)
+    }
 }
 
 /// a single segment in a conn
@@ -112,14 +130,6 @@ impl LayoutSegment {
         direction: Direction,
         length: f64,
     ) -> Result<ComponentId, Box<layout::Error>> {
-        if direction == self.direction {
-            return Err(layout::Error::NewSegmentSameDirection {
-                segment_id: self_segment_id,
-                direction,
-            }
-            .into());
-        }
-
         let next_segments = match &mut self.next {
             LayoutSegmentNext::InputSocket(_) => {
                 return Err(layout::Error::NewSegmentOnSocket {
@@ -128,9 +138,17 @@ impl LayoutSegment {
                 .into());
             }
             LayoutSegmentNext::Segments(segments) => {
+                if segments.is_empty() && direction == self.direction {
+                    return Err(layout::Error::NewSegmentDirectionConflict {
+                        segment_id: self_segment_id,
+                        direction,
+                    }
+                    .into());
+                }
+
                 for segment_id in segments.iter() {
                     if conns.get(segment_id)?.direction == direction {
-                        return Err(layout::Error::NewSegmentSameDirection {
+                        return Err(layout::Error::NewSegmentDirectionConflict {
                             segment_id: self_segment_id,
                             direction,
                         }
@@ -157,6 +175,73 @@ impl LayoutSegment {
         );
 
         Ok(new_id)
+    }
+
+    /// # Safety
+    ///
+    /// The reference to self may be invalid after this function
+    unsafe fn create_new_junction_unchecked(
+        &mut self,
+        id_counter: &mut ComponentIdIncrementer,
+        conns: &mut LayoutConn,
+        self_segment_id: ComponentId,
+        at_length: f64,
+    ) {
+        let new_id = id_counter.get();
+
+        let mut new_next = LayoutSegmentNext::Segments(BTreeSet::from([new_id]));
+        mem::swap(&mut new_next, &mut self.next);
+
+        let next = Self {
+            position: self.position + Vec2::new_with_direction(self.direction, at_length),
+            direction: self.direction,
+            previous: LayoutSegmentPrevious::Segment(self_segment_id),
+            next: new_next,
+            length: self.length - at_length,
+        };
+
+        self.length = at_length;
+        self.next = LayoutSegmentNext::Segments(BTreeSet::from([new_id]));
+
+        conns.insert_unchecked(new_id, next);
+    }
+
+    /// set length of a segment with a dangling end
+    fn set_length_end_dangling(
+        &mut self,
+        self_segment_id: &ComponentId,
+        length: f64,
+    ) -> Result<(), Box<layout::Error>> {
+        match &self.next {
+            LayoutSegmentNext::Segments(segments) if segments.is_empty() => {}
+            _ => {
+                return Err(layout::Error::SegmentNotDangling {
+                    segment_id: *self_segment_id,
+                }
+                .into());
+            }
+        }
+
+        self.length = length;
+        Ok(())
+    }
+
+    /// set length of a segment with a dangling start
+    fn set_length_start_dangling(
+        &mut self,
+        self_segment_id: &ComponentId,
+        length: f64,
+    ) -> Result<(), Box<layout::Error>> {
+        if !matches!(self.previous, LayoutSegmentPrevious::Dangling) {
+            return Err(layout::Error::SegmentNotDangling {
+                segment_id: *self_segment_id,
+            }
+            .into());
+        }
+
+        self.position += Vec2::new_with_direction(self.direction, self.length - length);
+        self.length = length;
+        Ok(())
     }
 }
 
