@@ -1,9 +1,9 @@
 /// ID of a component in both the simulation and graphics world
-#[derive(Hash, PartialEq, Eq, Clone, Copy, Debug)]
-pub struct ComponentId(u32);
+#[derive(Hash, PartialEq, Eq, Clone, Copy, Debug, PartialOrd, Ord)]
+pub struct ComponentId(u64);
 
 impl ComponentId {
-    pub fn new(id: u32) -> Self {
+    pub fn new(id: u64) -> Self {
         Self(id)
     }
 

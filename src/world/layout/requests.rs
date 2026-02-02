@@ -6,7 +6,7 @@ use std::{
 use semver::Version;
 
 use crate::{
-    common::world::{ComponentVersion, Vec2},
+    common::world::{ComponentId, ComponentVersion, Direction, Vec2},
     packages::destructor::{DestructedConn, DestructedData, DestructedGate},
 };
 

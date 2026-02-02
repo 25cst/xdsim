@@ -1,3 +1,6 @@
+use std::ops::Add;
+
+#[derive(Clone, Copy)]
 pub struct Vec2 {
     x: f64,
     y: f64,
@@ -17,6 +20,15 @@ impl Vec2 {
         Self { x, y }
     }
 
+    pub fn new_with_direction(direction: Direction, length: f64) -> Self {
+        match direction {
+            Direction::Up => Self::new(0.0, length),
+            Direction::Right => Self::new(length, 0.0),
+            Direction::Down => Self::new(0.0, -length),
+            Direction::Left => Self::new(-length, 0.0),
+        }
+    }
+
     pub fn x(&self) -> &f64 {
         &self.x
     }
@@ -26,7 +38,17 @@ impl Vec2 {
     }
 }
 
-#[derive(Clone, Copy)]
+impl Add for Vec2 {
+    type Output = Self;
+
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
     Up,
     Right,

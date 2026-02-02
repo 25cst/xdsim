@@ -1,12 +1,12 @@
 use crate::{
     common::world::{ComponentId, Direction, Rotation, Vec2},
-    world::{layout, sim::SimGate},
+    world::sim::SimGate,
 };
 
 /// layout gate does not include the actual gate struct,
 /// that is contained in SimGate
 pub struct LayoutGate {
-    origin: Vec2,
+    position: Vec2,
 
     rotation: Rotation,
 
@@ -15,7 +15,7 @@ pub struct LayoutGate {
 }
 
 impl LayoutGate {
-    pub fn new(origin: Vec2, gate: &SimGate) -> Self {
+    pub fn new(position: Vec2, gate: &SimGate) -> Self {
         fn get_rel_pos(bounding_box: &Vec2, direction: Direction, side_position: f64) -> Vec2 {
             match direction {
                 Direction::Down => Vec2::new(side_position, 0.0),
@@ -28,7 +28,7 @@ impl LayoutGate {
         let def = gate.get_def();
 
         Self {
-            origin,
+            position,
             inputs: def
                 .inputs
                 .iter()
@@ -57,6 +57,10 @@ impl LayoutGate {
                 .collect(),
             rotation: Rotation::D0,
         }
+    }
+
+    pub fn set_pos(&mut self, position: Vec2) {
+        self.position = position
     }
 }
 

@@ -4,7 +4,7 @@ use crate::{
         layout::{
             self,
             requests::{CreateBlankWorld, CreateDefaultGate},
-            state::{conns::WorldStateConns, gates::WorldStateGates},
+            state::gates::WorldStateGates,
         },
         sim,
     },
@@ -17,7 +17,7 @@ pub struct WorldState {
     sim_state: sim::WorldState,
 
     /// positions and paths of conns
-    conns: WorldStateConns,
+    // conns: WorldStateConns,
 
     /// position of gates
     gates: WorldStateGates,
@@ -31,7 +31,6 @@ impl WorldState {
                 gate_handles: request.gate_handles,
                 data_handles: request.data_handles,
             }),
-            conns: WorldStateConns::new_blank(request.conn_handles),
             gates: WorldStateGates::new_blank(),
         }
     }
