@@ -27,6 +27,12 @@ pub enum Error {
     SegmentNotDangling {
         segment_id: ComponentId,
     },
+    /// supplied length is out of expected value bounds
+    LengthOutOfBounds {
+        min: f64,
+        max: Option<f64>,
+        got: f64,
+    },
 }
 
 impl Error {

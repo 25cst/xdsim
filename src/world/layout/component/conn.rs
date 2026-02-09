@@ -11,6 +11,8 @@ use crate::{
 };
 
 /// Connection paths and position
+///
+/// DANGER: for any operation, it must be checked that length is greater than 0
 pub struct LayoutConn {
     /// origin position
     position: Vec2,
@@ -64,6 +66,8 @@ impl LayoutConn {
     }
 
     /// add a new segment after an existing segment
+    ///
+    /// DANGER: length must be positive
     pub fn add_segment_after(
         &mut self,
         id_counter: &mut ComponentIdIncrementer,
@@ -83,6 +87,8 @@ impl LayoutConn {
     }
 
     /// set length of a segment with a dangling end
+    ///
+    /// DANGER: length must be positive
     pub fn set_length_end_dangling(
         &mut self,
         segment_id: &ComponentId,
@@ -93,6 +99,8 @@ impl LayoutConn {
     }
 
     /// set length of a segment with a dangling start
+    ///
+    /// DANGER: length must be positive
     pub fn set_length_start_dangling(
         &mut self,
         segment_id: &ComponentId,
@@ -100,5 +108,33 @@ impl LayoutConn {
     ) -> Result<(), Box<layout::Error>> {
         self.get_mut(segment_id)?
             .set_length_start_dangling(segment_id, length)
+    }
+
+    /// create a junction somewhere in a segment, returns the ID of the new segment
+    ///
+    /// DANGER: at_length must be positive and less than the length of the segment it is creating a
+    /// junction from
+    pub fn junction_on_segment(
+        &mut self,
+        id_counter: &mut ComponentIdIncrementer,
+        segment_id: ComponentId,
+        at_length: f64,
+        direction: Direction,
+        new_segment_length: f64,
+    ) -> Result<ComponentId, Box<layout::Error>> {
+        let segment = unsafe { self.get_mut_unsafe(&segment_id) }?;
+
+        if direction == segment.get_direction() || direction == segment.get_direction().opposite() {
+            return Err(layout::Error::NewSegmentDirectionConflict {
+                segment_id: segment_id,
+                direction: segment.get_direction(),
+            }
+            .into());
+        }
+
+        unsafe { segment.create_new_junction_unchecked(id_counter, self, segment_id, at_length) };
+
+        self.add_segment_after(id_counter, segment_id, direction, new_segment_length)
+        // TODO: if fail removes the created junction
     }
 }

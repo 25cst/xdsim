@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, mem};
+use std::{collections::{BTreeSet, HashSet}, mem};
 
 use crate::{
     common::world::{
@@ -22,13 +22,19 @@ pub struct LayoutSegment {
 }
 
 impl LayoutSegment {
+    pub fn get_direction(&self) -> Direction {
+        self.direction
+    }
+}
+
+impl LayoutSegment {
     /// # Safety
     ///
     /// the reference to Self will become invalid after running this
     pub unsafe fn add_segment_back(
         &mut self,
         id_counter: &mut ComponentIdIncrementer,
-        conns: &mut LayoutConn,
+        conn: &mut LayoutConn,
         self_segment_id: ComponentId,
         direction: Direction,
         length: f64,
@@ -50,7 +56,7 @@ impl LayoutSegment {
                 }
 
                 for segment_id in segments.iter() {
-                    if conns.get(segment_id)?.direction == direction {
+                    if conn.get(segment_id)?.direction == direction {
                         return Err(layout::Error::NewSegmentDirectionConflict {
                             segment_id: self_segment_id,
                             direction,
@@ -66,14 +72,14 @@ impl LayoutSegment {
         next_segments.insert(new_id);
 
         // after inserting, the self reference may become invalid
-        conns.insert_unchecked(
+        conn.insert_unchecked(
             new_id,
             Self {
                 position: Vec2::new_with_direction(direction, length) + self.position,
                 previous: LayoutSegmentPrevious::Segment(self_segment_id),
                 direction,
                 length,
-                next: LayoutSegmentNext::Segments(BTreeSet::new()),
+                next: LayoutSegmentNext::Segments(HashSet::new()),
             },
         );
 
@@ -83,16 +89,16 @@ impl LayoutSegment {
     /// # Safety
     ///
     /// The reference to self may be invalid after this function
-    unsafe fn create_new_junction_unchecked(
+    pub unsafe fn create_new_junction_unchecked(
         &mut self,
         id_counter: &mut ComponentIdIncrementer,
-        conns: &mut LayoutConn,
+        conn: &mut LayoutConn,
         self_segment_id: ComponentId,
         at_length: f64,
     ) {
         let new_id = id_counter.get();
 
-        let mut new_next = LayoutSegmentNext::Segments(BTreeSet::from([new_id]));
+        let mut new_next = LayoutSegmentNext::Segments(HashSet::from([new_id]));
         mem::swap(&mut new_next, &mut self.next);
 
         let next = Self {
@@ -104,9 +110,9 @@ impl LayoutSegment {
         };
 
         self.length = at_length;
-        self.next = LayoutSegmentNext::Segments(BTreeSet::from([new_id]));
+        self.next = LayoutSegmentNext::Segments(HashSet::from([new_id]));
 
-        conns.insert_unchecked(new_id, next);
+        conn.insert_unchecked(new_id, next);
     }
 
     /// set length of a segment with a dangling end
@@ -159,12 +165,12 @@ pub enum LayoutSegmentPrevious {
     Dangling,
 }
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub enum LayoutSegmentNext {
     /// the segments that are connected to the end of this segment
     ///
     /// this segment must exist in LayoutConn::segments
-    Segments(BTreeSet<ComponentId>),
+    Segments(HashSet<ComponentId>),
     /// an input socket
     InputSocket(GateInputSocket),
 }
