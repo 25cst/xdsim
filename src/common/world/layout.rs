@@ -2,8 +2,8 @@ use std::ops::{Add, AddAssign};
 
 #[derive(Clone, Copy)]
 pub struct Vec2 {
-    x: f64,
-    y: f64,
+    x: i64,
+    y: i64,
 }
 
 impl From<xdsim_cbinds::common::Vec2> for Vec2 {
@@ -16,25 +16,25 @@ impl From<xdsim_cbinds::common::Vec2> for Vec2 {
 }
 
 impl Vec2 {
-    pub fn new(x: f64, y: f64) -> Self {
+    pub fn new(x: i64, y: i64) -> Self {
         Self { x, y }
     }
 
-    pub fn new_with_direction(direction: Direction, length: f64) -> Self {
+    pub fn new_with_direction(direction: Direction, length: i64) -> Self {
         match direction {
-            Direction::Up => Self::new(0.0, length),
-            Direction::Right => Self::new(length, 0.0),
-            Direction::Down => Self::new(0.0, -length),
-            Direction::Left => Self::new(-length, 0.0),
+            Direction::Up => Self::new(0, length),
+            Direction::Right => Self::new(length, 0),
+            Direction::Down => Self::new(0, -length),
+            Direction::Left => Self::new(-length, 0),
         }
     }
 
-    pub fn x(&self) -> &f64 {
-        &self.x
+    pub fn x(&self) -> i64 {
+        self.x
     }
 
-    pub fn y(&self) -> &f64 {
-        &self.y
+    pub fn y(&self) -> i64 {
+        self.y
     }
 }
 

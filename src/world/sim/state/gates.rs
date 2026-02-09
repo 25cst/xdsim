@@ -2,7 +2,8 @@ use std::{cell::UnsafeCell, collections::HashMap, rc::Rc};
 
 use crate::{
     common::world::{
-        ComponentId, ComponentIdIncrementer, ComponentVersion, GateInputSocket, GateOutputSocket,
+        ComponentId, ComponentIdIncrementer, ComponentIdType, ComponentVersion, GateInputSocket,
+        GateOutputSocket,
     },
     packages::destructor::DestructedGate,
     world::sim::{
@@ -52,7 +53,7 @@ impl WorldStateGates {
             .ok_or_else(|| Box::new(sim::Error::GateTypeNotFound { gate_type: gate }))?;
 
         let created_gate = SimGate::new_default(handle.clone(), world_data)?;
-        let new_gate_id = id_counter.get();
+        let new_gate_id = id_counter.get(ComponentIdType::Gate);
 
         self.gates
             .insert(new_gate_id, UnsafeCell::new(created_gate));

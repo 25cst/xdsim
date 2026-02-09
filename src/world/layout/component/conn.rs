@@ -1,140 +1,106 @@
-use std::{
-    cell::UnsafeCell,
-    collections::{HashMap, HashSet},
-};
+use std::collections::{HashMap, HashSet};
 
 use crate::{
-    common::world::{
-        ComponentId, ComponentIdIncrementer, Direction, GateInputSocket, GateOutputSocket, Vec2,
-    },
-    world::layout::{self, LayoutSegment},
+    common::world::{ComponentId, ComponentIdIncrementer, ComponentIdType, GateOutputSocket, Vec2},
+    world::layout,
 };
 
-/// Connection paths and position
-///
-/// DANGER: for any operation, it must be checked that length is greater than 0
+/// collection of points and segments with constraints
 pub struct LayoutConn {
-    /// origin position
-    position: Vec2,
-    /// origin segment: the ID for the first segment,
-    /// this segment is guaranteed to exist in segments
-    ///
-    /// Note: if the Conn has no segments, it is removed
-    origin: ComponentId,
-    /// the producer (output socket) that the conn is connected to
-    producer: Option<GateInputSocket>,
-    /// the consumers (input sockets) that the conn is connected to
+    points: HashMap<ComponentId, LayoutConnPoint>,
+    segments: HashMap<ComponentId, LayoutConnSegment>,
+    /// the data producer the conn is connected to
+    producer: Option<GateOutputSocket>,
+    /// the data consumers the conn is connected to
     consumers: HashSet<GateOutputSocket>,
-    /// the actual segments that make up the conn
-    segments: HashMap<ComponentId, UnsafeCell<LayoutSegment>>,
 }
 
 impl LayoutConn {
-    /// get a segment
-    pub fn get(&self, segment_id: &ComponentId) -> Result<&LayoutSegment, Box<layout::Error>> {
-        unsafe { self.get_mut_unsafe(segment_id).map(|c| &*c) }
-    }
-
-    /// get a segment (mutable)
-    pub fn get_mut(
+    fn make_point(
         &mut self,
-        segment_id: &ComponentId,
-    ) -> Result<&mut LayoutSegment, Box<layout::Error>> {
-        unsafe { self.get_mut_unsafe(segment_id) }
+        self_id: ComponentId,
+        counter: &mut ComponentIdIncrementer,
+        pos: Vec2,
+    ) -> ComponentId {
+        let id = counter.get(ComponentIdType::ConnPoint { conn_id: self_id });
+
+        self.points.insert(
+            id,
+            LayoutConnPoint {
+                pos,
+                before: LayoutConnPointBefore::Dangling,
+                segments_after: HashSet::new(),
+                consumer: None,
+            },
+        );
+
+        id
     }
 
-    /// DANGER: does not guarantee reference valid after ANY operation,
-    /// it is only guaranteed to be valid immediately after getting
-    ///
-    /// get a segment (mutable, unsafe)
-    unsafe fn get_mut_unsafe(
-        &self,
-        segment_id: &ComponentId,
-    ) -> Result<&'static mut LayoutSegment, Box<layout::Error>> {
-        match self.segments.get(segment_id) {
-            Some(segment) => Ok(unsafe { &mut *segment.get() }),
-            None => Err(layout::Error::SegmentNotFound {
-                segment_id: *segment_id,
-            }
-            .into()),
-        }
-    }
-
-    /// insert a new segment with an ID without performing any checks
-    pub fn insert_unchecked(&mut self, id: ComponentId, segment: LayoutSegment) {
-        self.segments.insert(id, UnsafeCell::new(segment));
-    }
-
-    /// add a new segment after an existing segment
-    ///
-    /// DANGER: length must be positive
-    pub fn add_segment_after(
+    fn make_segment(
         &mut self,
-        id_counter: &mut ComponentIdIncrementer,
-        after_segment: ComponentId,
-        direction: Direction,
-        length: f64,
+        self_id: ComponentId,
+        counter: &mut ComponentIdIncrementer,
+        from: ComponentId,
+        to: ComponentId,
     ) -> Result<ComponentId, Box<layout::Error>> {
-        unsafe {
-            self.get_mut_unsafe(&after_segment)?.add_segment_back(
-                id_counter,
-                self,
-                after_segment,
-                direction,
-                length,
-            )
-        }
-    }
-
-    /// set length of a segment with a dangling end
-    ///
-    /// DANGER: length must be positive
-    pub fn set_length_end_dangling(
-        &mut self,
-        segment_id: &ComponentId,
-        length: f64,
-    ) -> Result<(), Box<layout::Error>> {
-        self.get_mut(segment_id)?
-            .set_length_end_dangling(segment_id, length)
-    }
-
-    /// set length of a segment with a dangling start
-    ///
-    /// DANGER: length must be positive
-    pub fn set_length_start_dangling(
-        &mut self,
-        segment_id: &ComponentId,
-        length: f64,
-    ) -> Result<(), Box<layout::Error>> {
-        self.get_mut(segment_id)?
-            .set_length_start_dangling(segment_id, length)
-    }
-
-    /// create a junction somewhere in a segment, returns the ID of the new segment
-    ///
-    /// DANGER: at_length must be positive and less than the length of the segment it is creating a
-    /// junction from
-    pub fn junction_on_segment(
-        &mut self,
-        id_counter: &mut ComponentIdIncrementer,
-        segment_id: ComponentId,
-        at_length: f64,
-        direction: Direction,
-        new_segment_length: f64,
-    ) -> Result<ComponentId, Box<layout::Error>> {
-        let segment = unsafe { self.get_mut_unsafe(&segment_id) }?;
-
-        if direction == segment.get_direction() || direction == segment.get_direction().opposite() {
-            return Err(layout::Error::NewSegmentDirectionConflict {
-                segment_id: segment_id,
-                direction: segment.get_direction(),
-            }
-            .into());
+        if !self.points.contains_key(&from) {
+            return Err(layout::Error::ConnPointNotFound { point: from }.into());
         }
 
-        unsafe { segment.create_new_junction_unchecked(id_counter, self, segment_id, at_length) };
+        if !self.points.contains_key(&to) {
+            return Err(layout::Error::ConnPointNotFound { point: to }.into());
+        }
 
-        self.add_segment_after(id_counter, segment_id, direction, new_segment_length)
-        // TODO: if fail removes the created junction
+        let id = counter.get(ComponentIdType::ConnSegment { conn_id: self_id });
+
+        self.segments
+            .insert(id, LayoutConnSegment::new_unchecked(from, to));
+
+        Ok(id)
+    }
+}
+
+impl LayoutConn {
+    pub fn is_empty(&self) -> bool {
+        self.points.is_empty()
+    }
+}
+
+/// a point
+///
+/// each point can only have at most one input (includes producer and segments before)
+struct LayoutConnPoint {
+    /// position of the layout on canvas
+    pos: Vec2,
+    /// the connections/input socket before this point
+    before: LayoutConnPointBefore,
+    /// the segments connected after the point
+    segments_after: HashSet<ComponentId>,
+    /// the consumer this point outputs to
+    consumer: Option<GateOutputSocket>,
+}
+
+/// stuff that happens before the point
+enum LayoutConnPointBefore {
+    /// one output socket
+    Producer { output_socket: GateOutputSocket },
+    /// one segment
+    Segment { segment_id: ComponentId },
+    /// nothing
+    Dangling,
+}
+
+/// a segment connecting between two points,
+/// the from and to component IDs are points
+/// that exists inside the conn
+struct LayoutConnSegment {
+    from: ComponentId,
+    to: ComponentId,
+}
+
+impl LayoutConnSegment {
+    pub fn new_unchecked(from: ComponentId, to: ComponentId) -> Self {
+        Self { from, to }
     }
 }

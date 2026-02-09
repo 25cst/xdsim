@@ -89,7 +89,6 @@ impl DestructedGate {
                             component,
                         },
                     position,
-                    direction,
                 } = entry;
 
                 out.push(DestructedGateInputEntry {
@@ -105,8 +104,7 @@ impl DestructedGate {
                             }
                         })?,
                     },
-                    position: *position,
-                    direction: *direction,
+                    position: (*position).into(),
                 })
             }
 
@@ -129,7 +127,6 @@ impl DestructedGate {
                             component,
                         },
                     position,
-                    direction,
                 } = entry;
 
                 out.push(DestructedGateOutputEntry {
@@ -146,7 +143,6 @@ impl DestructedGate {
                         })?,
                     },
                     position: *position,
-                    direction: *direction,
                 })
             }
 

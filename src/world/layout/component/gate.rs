@@ -1,5 +1,5 @@
 use crate::{
-    common::world::{ComponentId, Direction, Rotation, Vec2},
+    common::world::{ComponentId, Rotation, Vec2},
     world::sim::SimGate,
 };
 
@@ -16,15 +16,6 @@ pub struct LayoutGate {
 
 impl LayoutGate {
     pub fn new(position: Vec2, gate: &SimGate) -> Self {
-        fn get_rel_pos(bounding_box: &Vec2, direction: Direction, side_position: f64) -> Vec2 {
-            match direction {
-                Direction::Down => Vec2::new(side_position, 0.0),
-                Direction::Left => Vec2::new(0.0, bounding_box.y() - side_position),
-                Direction::Up => Vec2::new(bounding_box.x() - side_position, *bounding_box.y()),
-                Direction::Right => Vec2::new(*bounding_box.x(), side_position),
-            }
-        }
-
         let def = gate.get_def();
 
         Self {
@@ -33,12 +24,7 @@ impl LayoutGate {
                 .inputs
                 .iter()
                 .map(|entry| LayoutGateInputEntry {
-                    rel_position: get_rel_pos(
-                        &def.bounding_box.into(),
-                        entry.direction.into(),
-                        entry.position,
-                    ),
-                    inbound_direction: entry.direction.into(),
+                    rel_position: entry.position.into(),
                     bounded_conn: None,
                 })
                 .collect(),
@@ -46,12 +32,7 @@ impl LayoutGate {
                 .outputs
                 .iter()
                 .map(|entry| LayoutGateOutputEntry {
-                    rel_position: get_rel_pos(
-                        &def.bounding_box.into(),
-                        entry.direction.into(),
-                        entry.position,
-                    ),
-                    inbound_direction: entry.direction.into(),
+                    rel_position: entry.position.into(),
                     bounded_conn: None,
                 })
                 .collect(),
@@ -66,12 +47,10 @@ impl LayoutGate {
 
 pub struct LayoutGateInputEntry {
     rel_position: Vec2,
-    inbound_direction: Direction,
     bounded_conn: Option<ComponentId>,
 }
 
 pub struct LayoutGateOutputEntry {
     rel_position: Vec2,
-    inbound_direction: Direction,
     bounded_conn: Option<ComponentId>,
 }

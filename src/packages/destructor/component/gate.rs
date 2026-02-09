@@ -39,11 +39,8 @@ pub struct DestructedGateInputEntry {
     /// the gate might be compatible with multiple versions of the package
     /// as long as the data have the same byte layout
     pub data_type_req: ComponentVersionReq,
-    /// which side of the bounding box the input is on
-    pub direction: Direction,
-    /// the position of the input: length from the nearest point in the counter
-    /// clockwise direction of the bounding box
-    pub position: f64,
+    /// the position of the input
+    pub position: Vec2,
 }
 
 pub struct DestructedGateOutputEntry {
@@ -51,11 +48,8 @@ pub struct DestructedGateOutputEntry {
     pub name: String,
     /// concrete data type: this is not a request
     pub data_type: ComponentVersion,
-    /// which side of the bounding box the output is on
-    pub direction: Direction,
-    /// the position of the output: length from the nearest point in the counter
-    /// clockwise direction of the bounding box
-    pub position: f64,
+    /// the position of the output
+    pub position: Vec2,
 }
 
 pub enum DestructedGateHandle {
