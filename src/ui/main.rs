@@ -77,7 +77,7 @@ impl State {
 impl Default for State {
     fn default() -> Self {
         let (w, g) = create_world();
-        Self { gates: vec![g], world: w }
+        Self { gates: vec![], world: w }
     }
 }
 
