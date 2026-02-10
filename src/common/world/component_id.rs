@@ -1,6 +1,6 @@
 /// ID of a component in both the simulation and graphics world
 #[derive(Hash, PartialEq, Eq, Clone, Copy, Debug, PartialOrd, Ord)]
-pub struct ComponentId(u64);
+pub struct ComponentId(pub u64);
 
 impl ComponentId {
     pub fn new(id: u64) -> Self {
