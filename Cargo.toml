@@ -10,7 +10,7 @@ semver = { version = "1.0.27", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
 toml = "0.9.10"
 # xdsim-cbinds = { path = "../xdsim-cbinds/", features = [ "v0-all", "impl" ] }
-xdsim-cbinds = { git = "https://github.com/25cst/xdsim-cbinds", rev = "defd141", features = [ "v0-all", "impl" ] }
+xdsim-cbinds = { git = "https://github.com/25cst/xdsim-cbinds", rev = "b229618", features = [ "v0-all", "impl" ] }
 
 [features]
 default = [ "devel" ]

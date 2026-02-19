@@ -55,7 +55,7 @@ pub enum Error {
         gate_type: ComponentVersion,
         gate_socket: GateConsumerSocket,
     },
-    /// No gate with requested ID in world
+    /// No gate with requested ID in sim world
     GateNotFound { gate_id: ComponentId },
     /// An input is bound to an output socket, but that output socket does not exist
     ProducerSocketNotFound { producer_socket: GateProducerSocket },

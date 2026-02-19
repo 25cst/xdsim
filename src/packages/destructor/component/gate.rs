@@ -1,5 +1,5 @@
 use xdsim_cbinds::{
-    common::{Direction, Slice, Vec2},
+    common::{Rotation, Slice, Vec2},
     v0::{app_state::PropertiesMut, graphics::Graphic},
 };
 
@@ -39,7 +39,7 @@ pub struct DestructedGateConsumerEntry {
     /// the gate might be compatible with multiple versions of the package
     /// as long as the data have the same byte layout
     pub data_type_req: ComponentVersionReq,
-    /// the position of the consumer
+    /// the position of the consumer, relative to gate position
     pub position: Vec2,
 }
 
@@ -48,7 +48,7 @@ pub struct DestructedGateProducerEntry {
     pub name: String,
     /// concrete data type: this is not a request
     pub data_type: ComponentVersion,
-    /// the position of the producer
+    /// the position of the producer, relative to gate position
     pub position: Vec2,
 }
 
@@ -86,9 +86,9 @@ impl DestructedGate {
         }
     }
 
-    pub fn draw(&self, gate: GatePtr, direction: Direction, bounding_box: Vec2) -> Graphic {
+    pub fn draw(&self, gate: GatePtr, rotation: Rotation, bounding_box: Vec2) -> Graphic {
         match &self.handle {
-            DestructedGateHandle::V0(handle) => (handle.draw)(gate, direction, bounding_box),
+            DestructedGateHandle::V0(handle) => (handle.draw)(gate, rotation, bounding_box),
         }
     }
 

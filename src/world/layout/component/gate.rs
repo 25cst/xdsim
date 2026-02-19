@@ -40,8 +40,12 @@ impl LayoutGate {
         }
     }
 
-    pub fn set_pos(&mut self, position: Vec2) {
-        self.position = position
+    pub fn get_pos(&self) -> Vec2 {
+        self.position
+    }
+
+    pub fn get_rotation(&self) -> Rotation {
+        self.rotation
     }
 }
 

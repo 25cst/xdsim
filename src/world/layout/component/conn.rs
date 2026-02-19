@@ -1,21 +1,35 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    rc::Rc,
+};
 
 use crate::{
     common::world::{
         ComponentId, ComponentIdIncrementer, ComponentIdType, GateConsumerSocket,
         GateProducerSocket, Vec2,
     },
-    world::layout,
+    packages::destructor::DestructedData,
+    world::{layout, sim},
 };
 
 /// collection of points and segments with constraints
 pub struct LayoutConn {
     points: HashMap<ComponentId, LayoutConnPoint>,
     segments: HashMap<ComponentId, LayoutConnSegment>,
+
+    /// data type of the conn
+    data_type: Rc<DestructedData>,
     /// the data producer the conn is connected to
     producer: Option<GateProducerSocket>,
     /// the data consumers the conn is connected to
     consumers: HashMap<GateConsumerSocket, u64>,
+}
+
+/// returned new connection, this sturct only exist to be destructed
+pub struct LayoutConnDrawNewRes {
+    pub conn: LayoutConn,
+    pub segment_id: ComponentId,
+    pub dangling_point: ComponentId,
 }
 
 impl LayoutConn {
@@ -101,6 +115,52 @@ impl LayoutConn {
         point.consumer = Some(consumer_socket);
         *self.consumers.entry(consumer_socket).or_default() += 1;
         Ok(())
+    }
+
+    /// draw a new segment from a producer socket
+    pub fn draw_new(
+        self_id: ComponentId,
+        counter: &mut ComponentIdIncrementer,
+        sim_world: &sim::WorldState,
+        layout_gates: &layout::WorldStateGates,
+        from: GateProducerSocket,
+        to: Vec2,
+    ) -> Result<LayoutConnDrawNewRes, Box<layout::Error>> {
+        let sim_gate = sim_world
+            .get_gate(from.get_id())
+            .map_err(layout::Error::from_sim)?;
+
+        let def = sim_gate.get_def();
+        let data_type = sim_gate
+            .get_producer_type(&from)
+            .map_err(layout::Error::from_sim)?
+            .clone();
+
+        let layout_gate = layout_gates.get_gate(from.get_id())?;
+
+        let mut out = Self {
+            points: HashMap::new(),
+            segments: HashMap::new(),
+            data_type,
+            producer: None,
+            consumers: HashMap::new(),
+        };
+
+        let from_id = out.make_point(
+            self_id,
+            counter,
+            layout_gate.get_pos()
+                + Vec2::from(def.consumers[from.get_index()].position)
+                    .rotate(layout_gate.get_rotation()),
+        );
+        let to_id = out.make_point(self_id, counter, to);
+        let segment_id = out.make_segment(self_id, counter, from_id, to_id)?;
+
+        Ok(LayoutConnDrawNewRes {
+            conn: out,
+            segment_id,
+            dangling_point: to_id,
+        })
     }
 }
 

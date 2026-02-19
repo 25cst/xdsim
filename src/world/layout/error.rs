@@ -9,6 +9,8 @@ pub enum Error {
     ConnSegmentNotFound { segment: ComponentId },
     /// binding two producers to a conn
     ConnPointDoubleBindProducer { point: ComponentId },
+    /// No gate with requested ID in layout world
+    GateNotFound { gate_id: ComponentId },
 }
 
 impl Error {

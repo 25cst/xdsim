@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use crate::{
     common::world::{ComponentId, Vec2},
-    world::{layout::component::LayoutGate, sim::SimGate},
+    world::{
+        layout::{self, component::LayoutGate},
+        sim::SimGate,
+    },
 };
 
 /// layout world state gate shadows over the sim world state
@@ -29,5 +32,11 @@ impl WorldStateGates {
     pub fn add_gate(&mut self, gate_id: ComponentId, origin: Vec2, sim_gate: &SimGate) {
         self.gates
             .insert(gate_id, LayoutGate::new(origin, sim_gate));
+    }
+
+    pub fn get_gate(&self, gate_id: &ComponentId) -> Result<&LayoutGate, Box<layout::Error>> {
+        self.gates
+            .get(gate_id)
+            .ok_or_else(|| Box::new(layout::Error::GateNotFound { gate_id: *gate_id }))
     }
 }

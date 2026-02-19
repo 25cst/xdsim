@@ -17,7 +17,7 @@ use crate::{
 
 pub struct DestructedGate {
     pub tick: extern "C" fn(GateMut, *const Slice) -> Slice,
-    pub draw: extern "C" fn(Gate, Direction, Vec2) -> Graphic,
+    pub draw: extern "C" fn(Gate, Rotation, Vec2) -> Graphic,
     pub definition: extern "C" fn(Gate) -> GateDefinition,
     pub properties: extern "C" fn(GateMut) -> PropertiesMut,
     pub serialize: extern "C" fn(Gate) -> Slice,
