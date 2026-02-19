@@ -7,9 +7,8 @@ pub enum Error {
     ConnPointNotFound { point: ComponentId },
     /// segment in a connection not found
     ConnSegmentNotFound { segment: ComponentId },
-    /// trying to bind to a point that is already binded to an producer
-    /// or has an incoming segment
-    ConnPointBindNonDanglingToProducer { point: ComponentId },
+    /// binding two producers to a conn
+    ConnPointDoubleBindProducer { point: ComponentId },
 }
 
 impl Error {

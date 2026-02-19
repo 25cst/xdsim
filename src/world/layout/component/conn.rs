@@ -15,10 +15,11 @@ pub struct LayoutConn {
     /// the data producer the conn is connected to
     producer: Option<GateProducerSocket>,
     /// the data consumers the conn is connected to
-    consumers: HashSet<GateConsumerSocket>,
+    consumers: HashMap<GateConsumerSocket, u64>,
 }
 
 impl LayoutConn {
+    /// make a new point in conn
     fn make_point(
         &mut self,
         self_id: ComponentId,
@@ -40,6 +41,7 @@ impl LayoutConn {
         id
     }
 
+    /// make a segment between two points
     fn make_segment(
         &mut self,
         self_id: ComponentId,
@@ -63,6 +65,7 @@ impl LayoutConn {
         Ok(id)
     }
 
+    /// bind a point to a producer
     pub fn bind_producer(
         &mut self,
         point_id: &ComponentId,
@@ -73,15 +76,30 @@ impl LayoutConn {
             .get_mut(point_id)
             .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: *point_id }))?;
 
-        if point.before != LayoutConnPointBefore::Dangling {
-            return Err(
-                layout::Error::ConnPointBindNonDanglingToProducer { point: *point_id }.into(),
-            );
+        if self.producer.is_some() {
+            return Err(layout::Error::ConnPointDoubleBindProducer { point: *point_id }.into());
         }
 
         point.before = LayoutConnPointBefore::Producer {
             producer_socket: producer_socket,
         };
+        self.producer = Some(producer_socket);
+        Ok(())
+    }
+
+    /// bind a point to a consumer
+    pub fn bind_consumer(
+        &mut self,
+        point_id: &ComponentId,
+        consumer_socket: GateConsumerSocket,
+    ) -> Result<(), Box<layout::Error>> {
+        let point = self
+            .points
+            .get_mut(point_id)
+            .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: *point_id }))?;
+
+        point.consumer = Some(consumer_socket);
+        *self.consumers.entry(consumer_socket).or_default() += 1;
         Ok(())
     }
 }
@@ -103,11 +121,10 @@ struct LayoutConnPoint {
     /// the segments connected after the point
     segments_after: HashSet<ComponentId>,
     /// the consumer this point outputs to
-    consumer: Option<GateProducerSocket>,
+    consumer: Option<GateConsumerSocket>,
 }
 
 /// stuff that happens before the point
-#[derive(PartialEq, Eq)]
 enum LayoutConnPointBefore {
     /// one producer socket
     Producer { producer_socket: GateProducerSocket },
