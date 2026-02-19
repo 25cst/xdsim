@@ -1,7 +1,7 @@
 use semver::{Version, VersionReq};
 
 use crate::{
-    common::world::{ComponentVersion, GateInputSocket, GateOutputSocket},
+    common::world::{ComponentVersion, GateConsumerSocket, GateProducerSocket},
     packages::{
         indexer::{
             component::PackageIndexBuilder,
@@ -48,7 +48,7 @@ pub fn create_not_gate() {
 }
 
 #[test]
-pub fn tick_not_gate_no_output() {
+pub fn tick_not_gate_no_producer() {
     let (index, res) = PackageIndexBuilder::new()
         .add_roots(&[dirs::data_dir().unwrap().join("xdsim/packages/components/")])
         .build();
@@ -120,8 +120,8 @@ pub fn tick_not_gate_multiple() {
 
     world
         .connect_gates(ConnectIOSockets {
-            output_socket: GateOutputSocket::new(not_gate, 0),
-            input_socket: GateInputSocket::new(not_gate, 0),
+            producer_socket: GateProducerSocket::new(not_gate, 0),
+            consumer_socket: GateConsumerSocket::new(not_gate, 0),
         })
         .unwrap();
 
@@ -129,7 +129,7 @@ pub fn tick_not_gate_multiple() {
         () => {
             unsafe {
                 *(world
-                    .get_buffer(&GateOutputSocket::new(not_gate, 0))
+                    .get_buffer(&GateProducerSocket::new(not_gate, 0))
                     .unwrap()
                     .get_data_ptr() as *const u8)
             }

@@ -22,33 +22,33 @@ pub struct DestructedGate {
 
 /// version-generic gate definition
 pub struct DestructedGateDefinition {
-    /// inputs in the order they should appear in the slice
-    pub inputs: Vec<DestructedGateInputEntry>,
-    /// outputs in the order they should appear in the slice
-    pub outputs: Vec<DestructedGateOutputEntry>,
+    /// consumers in the order they should appear in the slice
+    pub consumers: Vec<DestructedGateConsumerEntry>,
+    /// producers in the order they should appear in the slice
+    pub producers: Vec<DestructedGateProducerEntry>,
     /// The visual bounding box (dimension) of the gate
     /// The bottom left corner is (0, 0), top right corner is (width, height)
     pub bounding_box: Vec2,
 }
 
-pub struct DestructedGateInputEntry {
-    /// name of the input
+pub struct DestructedGateConsumerEntry {
+    /// name of the consumer
     pub name: String,
     /// requirement for a datatype,
     /// this is a pattern not a concrete version, because
     /// the gate might be compatible with multiple versions of the package
     /// as long as the data have the same byte layout
     pub data_type_req: ComponentVersionReq,
-    /// the position of the input
+    /// the position of the consumer
     pub position: Vec2,
 }
 
-pub struct DestructedGateOutputEntry {
-    /// name of the output
+pub struct DestructedGateProducerEntry {
+    /// name of the producer
     pub name: String,
     /// concrete data type: this is not a request
     pub data_type: ComponentVersion,
-    /// the position of the output
+    /// the position of the producer
     pub position: Vec2,
 }
 
@@ -80,9 +80,9 @@ impl DestructedGate {
     }
 
     /// the slice is an array of *mut Data
-    pub fn tick(&self, gate: GatePtrMut, inputs: *const Slice) -> Slice {
+    pub fn tick(&self, gate: GatePtrMut, consumer: *const Slice) -> Slice {
         match &self.handle {
-            DestructedGateHandle::V0(handle) => (handle.tick)(gate, inputs),
+            DestructedGateHandle::V0(handle) => (handle.tick)(gate, consumer),
         }
     }
 

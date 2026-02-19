@@ -9,8 +9,8 @@ use crate::{
     packages::{
         chelper::slice,
         destructor::{
-            self, DestructRequest, DestructedGateDefinition, DestructedGateInputEntry,
-            DestructedGateOutputEntry,
+            self, DestructRequest, DestructedGateConsumerEntry, DestructedGateDefinition,
+            DestructedGateProducerEntry,
         },
     },
 };
@@ -70,17 +70,17 @@ impl DestructedGate {
         gate_id: &ComponentVersion,
     ) -> Result<DestructedGateDefinition, destructor::Error> {
         let definition = (self.definition)(gate);
-        let inputs: &[GateInputEntry] = slice::from_slice(&definition.inputs);
-        let outputs: &[GateOutputEntry] = slice::from_slice(&definition.outputs);
+        let consumers: &[GateConsumerEntry] = slice::from_slice(&definition.consumers);
+        let producers: &[GateProducerEntry] = slice::from_slice(&definition.producers);
 
-        pub fn to_input_entries(
-            entries: &[GateInputEntry],
+        pub fn to_consumer_entries(
+            entries: &[GateConsumerEntry],
             gate_id: &ComponentVersion,
-        ) -> Result<Vec<DestructedGateInputEntry>, destructor::Error> {
+        ) -> Result<Vec<DestructedGateConsumerEntry>, destructor::Error> {
             let mut out = Vec::with_capacity(entries.len());
 
             for entry in entries {
-                let GateInputEntry {
+                let GateConsumerEntry {
                     name,
                     data_type_req:
                         ComponentIdent {
@@ -91,7 +91,7 @@ impl DestructedGate {
                     position,
                 } = entry;
 
-                out.push(DestructedGateInputEntry {
+                out.push(DestructedGateConsumerEntry {
                     name: slice::from_str(name),
                     data_type_req: ComponentVersionReq {
                         package: slice::from_str(package),
@@ -111,14 +111,14 @@ impl DestructedGate {
             Ok(out)
         }
 
-        pub fn to_output_entries(
-            entries: &[GateOutputEntry],
+        pub fn to_producer_entries(
+            entries: &[GateProducerEntry],
             gate_id: &ComponentVersion,
-        ) -> Result<Vec<DestructedGateOutputEntry>, destructor::Error> {
+        ) -> Result<Vec<DestructedGateProducerEntry>, destructor::Error> {
             let mut out = Vec::with_capacity(entries.len());
 
             for entry in entries {
-                let GateOutputEntry {
+                let GateProducerEntry {
                     name,
                     data_type:
                         ComponentIdent {
@@ -129,7 +129,7 @@ impl DestructedGate {
                     position,
                 } = entry;
 
-                out.push(DestructedGateOutputEntry {
+                out.push(DestructedGateProducerEntry {
                     name: slice::from_str(name),
                     data_type: ComponentVersion {
                         package: slice::from_str(package),
@@ -150,8 +150,8 @@ impl DestructedGate {
         }
 
         Ok(DestructedGateDefinition {
-            inputs: to_input_entries(inputs, gate_id)?,
-            outputs: to_output_entries(outputs, gate_id)?,
+            consumers: to_consumer_entries(consumers, gate_id)?,
+            producers: to_producer_entries(producers, gate_id)?,
             bounding_box: definition.bounding_box,
         })
     }

@@ -7,7 +7,7 @@ use std::{
 use semver::Version;
 
 use crate::{
-    common::world::{ComponentVersion, GateInputSocket, GateOutputSocket},
+    common::world::{ComponentVersion, GateConsumerSocket, GateProducerSocket},
     packages::destructor::{DestructedData, DestructedGate},
 };
 
@@ -47,6 +47,6 @@ pub struct CreateDefaultGate {
 /// `WorldState::connect_gates(ConnectIOSockets)  -> Result&lt;()&gt;`
 pub struct ConnectIOSockets {
     // self explanatory
-    pub input_socket: GateInputSocket,
-    pub output_socket: GateOutputSocket,
+    pub consumer_socket: GateConsumerSocket,
+    pub producer_socket: GateProducerSocket,
 }

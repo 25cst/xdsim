@@ -1,5 +1,5 @@
 use crate::common::world::{
-    ComponentId, ComponentVersion, ComponentVersionReq, GateInputSocket, GateOutputSocket,
+    ComponentId, ComponentVersion, ComponentVersionReq, GateConsumerSocket, GateProducerSocket,
 };
 
 #[derive(Debug)]
@@ -24,58 +24,58 @@ pub enum Error {
         reason: String,
     },
     /// Requests gate output by index but out of bounds
-    GateOutputIndexOutOfBounds {
+    GateProducerIndexOutOfBounds {
         gate_type: ComponentVersion,
-        gate_socket: GateOutputSocket,
-        output_list_length: usize,
+        gate_socket: GateProducerSocket,
+        producer_list_length: usize,
     },
     /// Requests gate input by index but out of bounds
-    GateInputIndexOutOfBounds {
+    GateConsumerIndexOutOfBounds {
         gate_type: ComponentVersion,
-        gate_socket: GateInputSocket,
-        output_list_length: usize,
+        gate_socket: GateConsumerSocket,
+        producer_list_length: usize,
     },
     /// Registering an input for a gate when it is already registered to an input
-    GateInputDoubleRegister {
+    GateConsumerDoubleRegister {
         gate_type: ComponentVersion,
-        gate_socket: GateInputSocket,
+        gate_socket: GateConsumerSocket,
     },
     /// Registering an output for a gate when it is already registered to an output
-    GateOutputDoubleRegister {
+    GateProducerDoubleRegister {
         gate_type: ComponentVersion,
-        gate_socket: GateOutputSocket,
+        gate_socket: GateProducerSocket,
     },
     /// Unregisters an output, but it is not registered in the first place
-    GateOutputUnregisterNothing {
+    GateProducerUnregisterNothing {
         gate_type: ComponentVersion,
-        gate_socket: GateOutputSocket,
+        gate_socket: GateProducerSocket,
     },
     /// Unregisters an input, but it is not registered in the first place
-    GateInputUnregisterNothing {
+    GateConsumerUnregisterNothing {
         gate_type: ComponentVersion,
-        gate_socket: GateInputSocket,
+        gate_socket: GateConsumerSocket,
     },
     /// No gate with requested ID in world
     GateNotFound { gate_id: ComponentId },
     /// An input is bound to an output socket, but that output socket does not exist
-    OutputSocketNotFound { output_socket: GateOutputSocket },
+    ProducerSocketNotFound { producer_socket: GateProducerSocket },
     /// an input socket is bound to the same output 2 times
-    OutputSocketDoubleBound {
-        input_socket: GateInputSocket,
-        output_socket: GateOutputSocket,
+    ProducerSocketDoubleBound {
+        consumer_socket: GateConsumerSocket,
+        producer_socket: GateProducerSocket,
     },
     /// An input is bound to an output socket, but that input socket does not exist
-    InputSocketNotFound { input_socket: GateInputSocket },
+    ConsumerSocketNotFound { consumer_socket: GateConsumerSocket },
     /// An input is already bound to an output, but it is requested to bound to another output
-    InputSocketDoubleBound {
-        input_socket: GateInputSocket,
-        current_output_source: GateOutputSocket,
-        new_output_source: GateOutputSocket,
+    ConsumerSocketDoubleBound {
+        consumer_socket: GateConsumerSocket,
+        current_producer: GateProducerSocket,
+        new_producer: GateProducerSocket,
     },
     /// An input socket is connected to an output socket but their data_types do not match
     IOTypeMismatch {
-        input_socket: GateInputSocket,
-        output_socket: GateOutputSocket,
+        consumer_socket: GateConsumerSocket,
+        producer_socket: GateProducerSocket,
     },
 }
 

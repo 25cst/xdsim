@@ -296,4 +296,3 @@ dependencies = [
 [[package]]
 name = "xdsim-cbinds"
 version = "0.1.0"
-source = "git+https://github.com/25cst/xdsim-cbinds?rev=e8f518f#e8f518fed7612a316cb78415e86a08f754bf15d8"

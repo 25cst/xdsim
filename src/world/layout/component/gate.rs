@@ -10,8 +10,8 @@ pub struct LayoutGate {
 
     rotation: Rotation,
 
-    inputs: Vec<LayoutGateInputEntry>,
-    outputs: Vec<LayoutGateOutputEntry>,
+    consumers: Vec<LayoutGateConsumerEntry>,
+    producers: Vec<LayoutGateProducerEntry>,
 }
 
 impl LayoutGate {
@@ -20,23 +20,23 @@ impl LayoutGate {
 
         Self {
             position,
-            inputs: def
-                .inputs
+            consumers: def
+                .consumers
                 .iter()
-                .map(|entry| LayoutGateInputEntry {
+                .map(|entry| LayoutGateConsumerEntry {
                     rel_position: entry.position.into(),
                     bounded_conn: None,
                 })
                 .collect(),
-            outputs: def
-                .outputs
+            producers: def
+                .producers
                 .iter()
-                .map(|entry| LayoutGateOutputEntry {
+                .map(|entry| LayoutGateProducerEntry {
                     rel_position: entry.position.into(),
                     bounded_conn: None,
                 })
                 .collect(),
-            rotation: Rotation::D0,
+            rotation: Rotation::zero(),
         }
     }
 
@@ -45,12 +45,12 @@ impl LayoutGate {
     }
 }
 
-pub struct LayoutGateInputEntry {
+pub struct LayoutGateConsumerEntry {
     rel_position: Vec2,
     bounded_conn: Option<ComponentId>,
 }
 
-pub struct LayoutGateOutputEntry {
+pub struct LayoutGateProducerEntry {
     rel_position: Vec2,
     bounded_conn: Option<ComponentId>,
 }

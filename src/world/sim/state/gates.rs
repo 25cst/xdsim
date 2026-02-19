@@ -2,8 +2,8 @@ use std::{cell::UnsafeCell, collections::HashMap, rc::Rc};
 
 use crate::{
     common::world::{
-        ComponentId, ComponentIdIncrementer, ComponentIdType, ComponentVersion, GateInputSocket,
-        GateOutputSocket,
+        ComponentId, ComponentIdIncrementer, ComponentIdType, ComponentVersion, GateConsumerSocket,
+        GateProducerSocket,
     },
     packages::destructor::DestructedGate,
     world::sim::{
@@ -90,11 +90,11 @@ impl WorldStateGates {
         }
     }
 
-    /// get the output of a socket
-    pub fn get_output(&self, output_socket: &GateOutputSocket) -> Option<&SimData> {
+    /// get the producer of a socket
+    pub fn get_producer(&self, producer_socket: &GateProducerSocket) -> Option<&SimData> {
         // unsafe ok because it is treating self as immutable
-        unsafe { &*self.gates.get(output_socket.get_id())?.get() }
-            .get_output(output_socket.get_index())
+        unsafe { &*self.gates.get(producer_socket.get_id())?.get() }
+            .get_producer(producer_socket.get_index())
     }
 
     /// get a gate by ID
@@ -107,31 +107,31 @@ impl WorldStateGates {
         self.gates.get(gate_id).map(|cell| unsafe { &*cell.get() })
     }
 
-    /// connect an input socket to an output socket,
-    /// requires: the input socket to not previously be connected to any other sockets
+    /// connect an consumer socket to an producer socket,
+    /// requires: the consumer socket to not previously be connected to any other sockets
     pub fn connect(
         &mut self,
-        output_socket: GateOutputSocket,
-        input_socket: GateInputSocket,
+        producer_socket: GateProducerSocket,
+        consumer_socket: GateConsumerSocket,
     ) -> Result<(), Box<sim::Error>> {
-        // the unsafes are fine because we are modifying dependents in output gate
-        // and source in input gate
-        let input_gate = match self.gates.get(input_socket.get_id()) {
+        // the unsafes are fine because we are modifying dependents in producer gate
+        // and source in consumer gate
+        let consumer_gate = match self.gates.get(consumer_socket.get_id()) {
             Some(gate) => unsafe { &mut *gate.get() },
-            None => return Err(sim::Error::InputSocketNotFound { input_socket }.into()),
+            None => return Err(sim::Error::ConsumerSocketNotFound { consumer_socket }.into()),
         };
 
-        let output_gate = match self.gates.get(output_socket.get_id()) {
+        let producer_gate = match self.gates.get(producer_socket.get_id()) {
             Some(gate) => unsafe { &mut *gate.get() },
-            None => return Err(sim::Error::OutputSocketNotFound { output_socket }.into()),
+            None => return Err(sim::Error::ProducerSocketNotFound { producer_socket }.into()),
         };
 
-        input_gate.connect_input_to(
-            &input_socket,
-            output_socket,
-            output_gate.get_output_type(&output_socket)?,
+        consumer_gate.connect_consumer_to(
+            &consumer_socket,
+            producer_socket,
+            producer_gate.get_producer_type(&producer_socket)?,
         )?;
 
-        output_gate.output_connected_from(&output_socket, input_socket)
+        producer_gate.producer_connected_from(&producer_socket, consumer_socket)
     }
 }

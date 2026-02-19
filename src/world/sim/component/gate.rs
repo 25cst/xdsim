@@ -2,8 +2,8 @@ use std::{collections::HashSet, rc::Rc};
 
 use crate::{
     common::world::{
-        ComponentId, ComponentVersion, ComponentVersionReq, DataPtrMut, GateInputSocket,
-        GateOutputSocket, GatePtrMut,
+        ComponentId, ComponentVersion, ComponentVersionReq, DataPtrMut, GateConsumerSocket,
+        GateProducerSocket, GatePtrMut,
     },
     packages::{
         chelper::slice,
@@ -24,8 +24,8 @@ pub struct SimGate {
 
     definition: DestructedGateDefinition,
 
-    inputs: Vec<SimGateInputEntry>,
-    outputs: Vec<SimGateOutputEntry>,
+    consumers: Vec<SimGateConsumerEntry>,
+    producers: Vec<SimGateProducerEntry>,
 }
 
 impl SimGate {
@@ -36,30 +36,30 @@ impl SimGate {
 }
 
 #[derive(Clone)]
-pub struct SimGateInputEntry {
+pub struct SimGateConsumerEntry {
     request: ComponentVersionReq,
     /// data type handle to use if unbound
     default_data_type: Rc<DestructedData>,
-    status: SimGateInputEntryStatus,
+    status: SimGateConsumerEntryStatus,
 }
 
 #[derive(Clone)]
-pub enum SimGateInputEntryStatus {
+pub enum SimGateConsumerEntryStatus {
     Unbound,
     Bound {
         handle: Rc<DestructedData>,
-        source: GateOutputSocket,
+        source: GateProducerSocket,
     },
 }
 
-pub struct SimGateOutputEntry {
+pub struct SimGateProducerEntry {
     handle: Rc<DestructedData>,
 
     read_only: SimData,
     write_only: Option<SimData>,
 
-    /// inputs that depend on this output socket
-    dependents: HashSet<GateInputSocket>,
+    /// consumers that depend on this producer socket
+    dependents: HashSet<GateConsumerSocket>,
 }
 
 impl SimGate {
@@ -68,9 +68,9 @@ impl SimGate {
         &self.definition
     }
 
-    /// get the data at the index-th output of the gate
-    pub fn get_output(&self, index: usize) -> Option<&SimData> {
-        Some(&self.outputs.get(index)?.read_only)
+    /// get the data at the index-th producer of the gate
+    pub fn get_producer(&self, index: usize) -> Option<&SimData> {
+        Some(&self.producers.get(index)?.read_only)
     }
 
     /// Create a new gate with its default configuation given a handle
@@ -87,14 +87,14 @@ impl SimGate {
             })
         })?;
 
-        let mut inputs = Vec::with_capacity(definition.inputs.len());
+        let mut consumers = Vec::with_capacity(definition.consumers.len());
 
-        for entry in definition.inputs.iter() {
+        for entry in definition.consumers.iter() {
             match world_data.request_handle(&entry.data_type_req) {
-                Some(data_type) => inputs.push(SimGateInputEntry {
+                Some(data_type) => consumers.push(SimGateConsumerEntry {
                     request: entry.data_type_req.clone(),
                     default_data_type: data_type.clone(),
-                    status: SimGateInputEntryStatus::Unbound,
+                    status: SimGateConsumerEntryStatus::Unbound,
                 }),
                 None => {
                     return Err(sim::Error::RequestedDataTypeNotFound {
@@ -105,11 +105,11 @@ impl SimGate {
             }
         }
 
-        let mut outputs = Vec::with_capacity(definition.outputs.len());
+        let mut producers = Vec::with_capacity(definition.producers.len());
 
-        for entry in definition.outputs.iter() {
+        for entry in definition.producers.iter() {
             match world_data.get_handle(&entry.data_type) {
-                Some(data_type) => outputs.push(SimGateOutputEntry {
+                Some(data_type) => producers.push(SimGateProducerEntry {
                     handle: data_type.clone(),
                     read_only: SimData::new_default(data_type.clone()),
                     write_only: None,
@@ -128,8 +128,8 @@ impl SimGate {
             gate_ptr,
             handle,
 
-            inputs,
-            outputs,
+            consumers,
+            producers,
 
             definition,
         })
@@ -148,21 +148,21 @@ impl SimGate {
         // so they can be dropped before the function returns
         let mut temp_datas = Vec::new();
 
-        // creates the array of pointers to input data
+        // creates the array of pointers to consumer data
         // (is it possible to reduce the amount of cloning here?)
-        let input_slice = slice::from_vec_rustonly(
-            self.inputs
+        let consumer_slice = slice::from_vec_rustonly(
+            self.consumers
                 .iter()
-                .map(|input| match &input.status {
-                    SimGateInputEntryStatus::Bound { handle, source } => {
-                        match world_gates.get_output(source) {
+                .map(|consumer| match &consumer.status {
+                    SimGateConsumerEntryStatus::Bound { handle, source } => {
+                        match world_gates.get_producer(source) {
                             Some(data) => data.get_data_ptr(),
                             None => {
-                                errors.push(sim::Error::OutputSocketNotFound {
-                                    output_socket: *source,
+                                errors.push(sim::Error::ProducerSocketNotFound {
+                                    producer_socket: *source,
                                 });
 
-                                // if output socket not in world, treat as unbound
+                                // if producer socket not in world, treat as unbound
                                 let temp_data = SimData::new_default(handle.clone());
                                 let ptr = temp_data.get_data_ptr();
                                 temp_datas.push(temp_data);
@@ -170,8 +170,8 @@ impl SimGate {
                             }
                         }
                     }
-                    SimGateInputEntryStatus::Unbound => {
-                        let temp_data = SimData::new_default(input.default_data_type.clone());
+                    SimGateConsumerEntryStatus::Unbound => {
+                        let temp_data = SimData::new_default(consumer.default_data_type.clone());
                         let ptr = temp_data.get_data_ptr();
                         temp_datas.push(temp_data);
                         ptr
@@ -180,15 +180,15 @@ impl SimGate {
                 .collect(),
         );
 
-        let output_slice = self.handle.tick(self.gate_ptr, &input_slice);
+        let producer_slice = self.handle.tick(self.gate_ptr, &consumer_slice);
 
-        slice::from_slice::<DataPtrMut>(&output_slice)
+        slice::from_slice::<DataPtrMut>(&producer_slice)
             .iter()
-            .zip(self.outputs.iter_mut())
+            .zip(self.producers.iter_mut())
             .for_each(
                 |(
                     &data,
-                    SimGateOutputEntry {
+                    SimGateProducerEntry {
                         handle,
                         write_only,
                         dependents: _,
@@ -213,94 +213,94 @@ impl SimGate {
     /// replace all read_only buffers with write_only buffers
     /// this is to be ran at the end of a tick
     pub fn flush(&mut self) {
-        for output in self.outputs.iter_mut() {
-            if let Some(new_output) = output.write_only.take() {
-                output.read_only = new_output;
+        for producer in self.producers.iter_mut() {
+            if let Some(new_producer) = producer.write_only.take() {
+                producer.read_only = new_producer;
             }
         }
     }
 
-    /// connect an input (of this gate) to an output (of another gate).
+    /// connect an consumer (of this gate) to an producer (of another gate).
     /// this also checks if their types are compatible
-    pub fn connect_input_to(
+    pub fn connect_consumer_to(
         &mut self,
-        input_socket: &GateInputSocket,
-        output_socket: GateOutputSocket,
-        output_type: &Rc<DestructedData>,
+        consumer_socket: &GateConsumerSocket,
+        producer_socket: GateProducerSocket,
+        producer_type: &Rc<DestructedData>,
     ) -> Result<(), Box<sim::Error>> {
-        let input_entry = self
-            .inputs
-            .get_mut(input_socket.get_index())
+        let consumer_entry = self
+            .consumers
+            .get_mut(consumer_socket.get_index())
             .ok_or_else(|| {
-                Box::new(sim::Error::InputSocketNotFound {
-                    input_socket: *input_socket,
+                Box::new(sim::Error::ConsumerSocketNotFound {
+                    consumer_socket: *consumer_socket,
                 })
             })?;
 
-        match input_entry.status {
-            SimGateInputEntryStatus::Unbound => {
-                if !input_entry.request.matches(output_type.id()) {
+        match consumer_entry.status {
+            SimGateConsumerEntryStatus::Unbound => {
+                if !consumer_entry.request.matches(producer_type.id()) {
                     return Err(sim::Error::IOTypeMismatch {
-                        input_socket: *input_socket,
-                        output_socket,
+                        consumer_socket: *consumer_socket,
+                        producer_socket,
                     }
                     .into());
                 }
 
-                input_entry.status = SimGateInputEntryStatus::Bound {
-                    handle: output_type.clone(),
-                    source: output_socket,
+                consumer_entry.status = SimGateConsumerEntryStatus::Bound {
+                    handle: producer_type.clone(),
+                    source: producer_socket,
                 };
                 Ok(())
             }
-            SimGateInputEntryStatus::Bound { source, .. } => {
-                Err(sim::Error::InputSocketDoubleBound {
-                    input_socket: *input_socket,
-                    current_output_source: source,
-                    new_output_source: output_socket,
+            SimGateConsumerEntryStatus::Bound { source, .. } => {
+                Err(sim::Error::ConsumerSocketDoubleBound {
+                    consumer_socket: *consumer_socket,
+                    current_producer: source,
+                    new_producer: producer_socket,
                 }
                 .into())
             }
         }
     }
 
-    /// connect an output (of this gate) to an input (of another gate)
-    pub fn output_connected_from(
+    /// connect an producer (of this gate) to an consumer (of another gate)
+    pub fn producer_connected_from(
         &mut self,
-        output_socket: &GateOutputSocket,
-        input_socket: GateInputSocket,
+        producer_socket: &GateProducerSocket,
+        consumer_socket: GateConsumerSocket,
     ) -> Result<(), Box<sim::Error>> {
-        let output_entry = self
-            .outputs
-            .get_mut(output_socket.get_index())
+        let producer_entry = self
+            .producers
+            .get_mut(producer_socket.get_index())
             .ok_or_else(|| {
-                Box::new(sim::Error::OutputSocketNotFound {
-                    output_socket: *output_socket,
+                Box::new(sim::Error::ProducerSocketNotFound {
+                    producer_socket: *producer_socket,
                 })
             })?;
 
-        if output_entry.dependents.insert(input_socket) {
+        if producer_entry.dependents.insert(consumer_socket) {
             Ok(())
         } else {
-            Err(sim::Error::OutputSocketDoubleBound {
-                input_socket,
-                output_socket: *output_socket,
+            Err(sim::Error::ProducerSocketDoubleBound {
+                consumer_socket,
+                producer_socket: *producer_socket,
             }
             .into())
         }
     }
 
-    /// gate data type (destructed gate) of an output index of this gate,
-    /// it does not check if the component id in the output socket if correct,
+    /// gate data type (destructed gate) of an producer index of this gate,
+    /// it does not check if the component id in the producer socket if correct,
     /// you will have to make sure that is the case yourself
-    pub fn get_output_type(
+    pub fn get_producer_type(
         &self,
-        output_socket: &GateOutputSocket,
+        producer_socket: &GateProducerSocket,
     ) -> Result<&Rc<DestructedData>, Box<sim::Error>> {
-        match self.outputs.get(output_socket.get_index()) {
-            Some(output_entry) => Ok(&output_entry.handle),
-            None => Err(sim::Error::OutputSocketNotFound {
-                output_socket: *output_socket,
+        match self.producers.get(producer_socket.get_index()) {
+            Some(producer_entry) => Ok(&producer_entry.handle),
+            None => Err(sim::Error::ProducerSocketNotFound {
+                producer_socket: *producer_socket,
             }
             .into()),
         }

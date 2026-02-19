@@ -20,15 +20,6 @@ impl Vec2 {
         Self { x, y }
     }
 
-    pub fn new_with_direction(direction: Direction, length: i64) -> Self {
-        match direction {
-            Direction::Up => Self::new(0, length),
-            Direction::Right => Self::new(length, 0),
-            Direction::Down => Self::new(0, -length),
-            Direction::Left => Self::new(-length, 0),
-        }
-    }
-
     pub fn x(&self) -> i64 {
         self.x
     }
@@ -55,63 +46,39 @@ impl Add for Vec2 {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Direction {
-    Up,
-    Right,
-    Down,
-    Left,
-}
+/// angle counter clockwise from the x-axis
+pub struct Rotation(f64);
 
-impl Direction {
-    pub fn opposite(&self) -> Self {
-        self.rotate(Rotation::D180)
+impl Rotation {
+    /// normalise it to between 0 and 360
+    fn normalise(&mut self) {
+        self.0 = self.0.rem_euclid(360.0);
+    }
+
+    pub const fn zero() -> Self {
+        Rotation(0.0)
+    }
+
+    pub fn new(angle: f64) -> Self {
+        let mut out = Self(angle);
+        out.normalise();
+        out
     }
 }
 
-impl From<xdsim_cbinds::common::Direction> for Direction {
-    fn from(value: xdsim_cbinds::common::Direction) -> Self {
-        match value {
-            xdsim_cbinds::common::Direction::Up => Self::Up,
-            xdsim_cbinds::common::Direction::Right => Self::Right,
-            xdsim_cbinds::common::Direction::Down => Self::Down,
-            xdsim_cbinds::common::Direction::Left => Self::Left,
-        }
+impl Add for Rotation {
+    type Output = Self;
+
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self.0 += rhs.0;
+        self.normalise();
+        self
     }
 }
 
-/// rotation to apply to direction
-#[derive(Clone, Copy)]
-pub enum Rotation {
-    D0,
-    D90,
-    D180,
-    D270,
-}
-
-impl Direction {
-    /// apply rotation to direction
-    pub fn rotate(&self, rotation: Rotation) -> Self {
-        match rotation {
-            Rotation::D0 => *self,
-            Rotation::D90 => match self {
-                Direction::Up => Direction::Right,
-                Direction::Right => Direction::Down,
-                Direction::Down => Direction::Left,
-                Direction::Left => Direction::Up,
-            },
-            Rotation::D180 => match self {
-                Direction::Up => Direction::Down,
-                Direction::Down => Direction::Up,
-                Direction::Left => Direction::Right,
-                Direction::Right => Direction::Left,
-            },
-            Rotation::D270 => match self {
-                Direction::Up => Direction::Left,
-                Direction::Left => Direction::Down,
-                Direction::Down => Direction::Right,
-                Direction::Right => Direction::Up,
-            },
-        }
+impl AddAssign for Rotation {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0;
+        self.normalise();
     }
 }
