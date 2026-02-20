@@ -104,7 +104,7 @@ impl DestructedGate {
                             }
                         })?,
                     },
-                    position: (*position).into(),
+                    position: *position,
                 })
             }
 

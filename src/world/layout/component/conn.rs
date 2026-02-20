@@ -32,6 +32,12 @@ pub struct LayoutConnDrawNewRes {
     pub dangling_point: ComponentId,
 }
 
+/// returned new segment and point in connection, this sturct only exist to be destructed
+pub struct LayoutConnDrawDanglingRes {
+    pub segment_id: ComponentId,
+    pub dangling_point: ComponentId,
+}
+
 impl LayoutConn {
     /// make a new point in conn
     fn make_point(
@@ -158,6 +164,27 @@ impl LayoutConn {
 
         Ok(LayoutConnDrawNewRes {
             conn: out,
+            segment_id,
+            dangling_point: to_id,
+        })
+    }
+
+    /// draw a new segment from a point in this conn
+    pub fn draw_dangling(
+        &mut self,
+        self_id: ComponentId,
+        counter: &mut ComponentIdIncrementer,
+        from: ComponentId,
+        to: Vec2,
+    ) -> Result<LayoutConnDrawDanglingRes, Box<layout::Error>> {
+        if !self.points.contains_key(&from) {
+            return Err(layout::Error::ConnPointNotFound { point: from }.into());
+        }
+
+        let to_id = self.make_point(self_id, counter, to);
+        let segment_id = self.make_segment(self_id, counter, from, to_id)?;
+
+        Ok(LayoutConnDrawDanglingRes {
             segment_id,
             dangling_point: to_id,
         })
