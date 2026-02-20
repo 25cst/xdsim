@@ -34,6 +34,7 @@ impl WorldStateGates {
             .insert(gate_id, LayoutGate::new(origin, sim_gate));
     }
 
+    /// returns a layout gate
     pub fn get_gate(&self, gate_id: &ComponentId) -> Result<&LayoutGate, Box<layout::Error>> {
         self.gates
             .get(gate_id)

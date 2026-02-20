@@ -29,6 +29,7 @@ pub struct LayoutConn {
 pub struct LayoutConnDrawNewRes {
     pub conn: LayoutConn,
     pub segment_id: ComponentId,
+    pub producer_point: ComponentId,
     pub dangling_point: ComponentId,
 }
 
@@ -165,6 +166,7 @@ impl LayoutConn {
         Ok(LayoutConnDrawNewRes {
             conn: out,
             segment_id,
+            producer_point: from_id,
             dangling_point: to_id,
         })
     }
