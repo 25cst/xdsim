@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use crate::{
-    common::world::{ComponentId, ComponentIdIncrementer, GateProducerSocket, Vec2},
+    common::world::{
+        ComponentId, ComponentIdIncrementer, GateConsumerSocket, GateProducerSocket, Vec2,
+    },
     world::{
         layout::{self, ConnDrawDanglingRes, ConnDrawNewRes, LayoutConn},
         sim,
@@ -46,8 +48,6 @@ impl WorldStateConns {
         self.conns.insert(conn_id, new_conn.conn);
 
         Ok(ConnDrawNewRes {
-            conn_id,
-            segment_id: new_conn.segment_id,
             producer_point: new_conn.producer_point,
             dangling_point: new_conn.dangling_point,
         })
@@ -58,15 +58,26 @@ impl WorldStateConns {
         &mut self,
         counter: &mut ComponentIdIncrementer,
         conn_id: ComponentId,
-        from: ComponentId,
+        from_point: ComponentId,
         to: Vec2,
     ) -> Result<ConnDrawDanglingRes, Box<layout::Error>> {
         let conn = self.get_conn_mut(&conn_id)?;
-        let res = conn.draw_dangling(conn_id, counter, from, to)?;
+        let res = conn.draw_dangling(conn_id, counter, from_point, to)?;
 
         Ok(ConnDrawDanglingRes {
-            segment_id: res.segment_id,
             dangling_point: res.dangling_point,
         })
+    }
+
+    /// bind a point to a consumer
+    pub fn bind_consumer(
+        &mut self,
+        sim_world: &mut sim::WorldState,
+        conn_id: &ComponentId,
+        point_id: &ComponentId,
+        consumer_socket: GateConsumerSocket,
+    ) -> Result<(), Box<layout::Error>> {
+        let conn = self.get_conn_mut(conn_id)?;
+        conn.bind_consumer(sim_world, point_id, consumer_socket)
     }
 }

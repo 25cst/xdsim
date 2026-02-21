@@ -22,20 +22,21 @@ pub struct LayoutConn {
     /// the data producer the conn is connected to
     producer: Option<GateProducerSocket>,
     /// the data consumers the conn is connected to
+    /// (number of points that are bounded to a consumer, if it drops to 0, remove the consumer)
     consumers: HashMap<GateConsumerSocket, u64>,
 }
 
 /// returned new connection, this sturct only exist to be destructed
 pub struct LayoutConnDrawNewRes {
     pub conn: LayoutConn,
-    pub segment_id: ComponentId,
+    // pub segment_id: ComponentId,
     pub producer_point: ComponentId,
     pub dangling_point: ComponentId,
 }
 
 /// returned new segment and point in connection, this sturct only exist to be destructed
 pub struct LayoutConnDrawDanglingRes {
-    pub segment_id: ComponentId,
+    // pub segment_id: ComponentId,
     pub dangling_point: ComponentId,
 }
 
@@ -111,9 +112,19 @@ impl LayoutConn {
     /// bind a point to a consumer
     pub fn bind_consumer(
         &mut self,
+        sim_world: &mut sim::WorldState,
         point_id: &ComponentId,
         consumer_socket: GateConsumerSocket,
     ) -> Result<(), Box<layout::Error>> {
+        if let Some(producer) = self.producer {
+            sim_world
+                .connect_gates(sim::requests::ConnectIOSockets {
+                    consumer_socket,
+                    producer_socket: producer,
+                })
+                .map_err(layout::Error::from_sim)?;
+        }
+
         let point = self
             .points
             .get_mut(point_id)
@@ -161,11 +172,10 @@ impl LayoutConn {
                     .rotate(layout_gate.get_rotation()),
         );
         let to_id = out.make_point(self_id, counter, to);
-        let segment_id = out.make_segment(self_id, counter, from_id, to_id)?;
+        let _segment_id = out.make_segment(self_id, counter, from_id, to_id)?;
 
         Ok(LayoutConnDrawNewRes {
             conn: out,
-            segment_id,
             producer_point: from_id,
             dangling_point: to_id,
         })
@@ -184,10 +194,10 @@ impl LayoutConn {
         }
 
         let to_id = self.make_point(self_id, counter, to);
-        let segment_id = self.make_segment(self_id, counter, from, to_id)?;
+        let _segment_id = self.make_segment(self_id, counter, from, to_id)?;
 
         Ok(LayoutConnDrawDanglingRes {
-            segment_id,
+            // segment_id,
             dangling_point: to_id,
         })
     }

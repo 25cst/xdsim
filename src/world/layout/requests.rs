@@ -41,10 +41,6 @@ pub struct CreateBlankWorld {
 
 /// response from drawing a new connection
 pub struct ConnDrawNewRes {
-    /// id of the new conn
-    pub conn_id: ComponentId,
-    /// id of the only segment in conn
-    pub segment_id: ComponentId,
     /// id of the point at the producer socket
     pub producer_point: ComponentId,
     /// id of the point at the dangling end of the segment
@@ -53,8 +49,6 @@ pub struct ConnDrawNewRes {
 
 /// response from drawing a segment from a dangling connection
 pub struct ConnDrawDanglingRes {
-    /// id of the new segment
-    pub segment_id: ComponentId,
     /// id of the new dangling point
     pub dangling_point: ComponentId,
 }
