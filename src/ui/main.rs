@@ -185,29 +185,83 @@ impl Default for StrokeStyle {
     }
 }
 
+trait DrawOnto {
+    fn draw_onto(&self, f: &mut iced::widget::canvas::Frame, bounds: Rect2f);
+}
+
+struct Circle {
+    pub center: Vec2f, 
+    pub radius: f32, 
+    pub fill: Option<FillStyle>,
+    pub stroke: Option<StrokeStyle>
+}
+impl Circle {
+    pub fn new(center: Vec2f, radius: f32) -> Self {
+        Self {center, radius, fill: None, stroke: None}
+    }
+    pub fn with_fill(self, fill: Option<FillStyle>) -> Self {
+        Self { center: self.center, radius: self.radius, fill, stroke: self.stroke }
+    }
+    pub fn with_stroke(self, stroke: Option<StrokeStyle>) -> Self {
+        Self { center: self.center, radius: self.radius, fill: self.fill, stroke }
+    }
+}
+impl DrawOnto for Circle {
+    fn draw_onto(&self, f: &mut iced::widget::canvas::Frame, _bounds: Rect2f) {
+        let Circle { center, radius, fill, stroke } = self;
+        let circle = canvas::path::Path::circle((*center).into(), *radius);
+        if let Some(fill) = fill { f.fill(&circle, *fill); }
+        if let Some(stroke) = stroke { f.stroke(&circle, *stroke); }
+    }
+}
+
+struct Rectangle {
+    pub topleft: Vec2f,
+    pub size: Vec2f,
+    pub fill: Option<FillStyle>,
+    pub stroke: Option<StrokeStyle>
+}
+impl Rectangle {
+    pub fn new(topleft: Vec2f, size: Vec2f) -> Self {
+        Self {topleft, size, fill: None, stroke: None}
+    }
+    pub fn with_fill(self, fill: Option<FillStyle>) -> Self {
+        Self { topleft: self.topleft, size: self.size, fill, stroke: self.stroke }
+    }
+    pub fn with_stroke(self, stroke: Option<StrokeStyle>) -> Self {
+        Self { topleft: self.topleft, size: self.size, fill: self.fill, stroke }
+    }
+}
+impl DrawOnto for Rectangle {
+    fn draw_onto(&self, f: &mut iced::widget::canvas::Frame, _bounds: Rect2f) {
+        let Rectangle { topleft, size, fill, stroke } = self;
+        let rect = canvas::path::Path::rectangle((*topleft).into(), (*size).into());
+        if let Some(fill) = fill { f.fill(&rect, *fill); }
+        if let Some(stroke) = stroke { f.stroke(&rect, *stroke); }
+    }
+}
+
 enum GraphicsElem {
     // TODO: tbh this could be done with traits and OOP but nah for now
     //  can always refactor later
-    Circle { 
-        center: Vec2f, 
-        radius: f32, 
-        fill: Option<FillStyle>,
-        stroke: Option<StrokeStyle>
-    },
-    Rectangle { topleft: Vec2f, size: Vec2f, fill: Color },
+    Circle(Circle),
+    Rectangle(Rectangle),
 }
-impl GraphicsElem {
-    pub fn draw_onto(&self, f: &mut iced::widget::canvas::Frame, _bounds: Rect2f) {
+impl From<Circle> for GraphicsElem {
+    fn from(value: Circle) -> Self {
+        Self::Circle(value)
+    }
+}
+impl From<Rectangle> for GraphicsElem {
+    fn from(value: Rectangle) -> Self {
+        Self::Rectangle(value)
+    }
+}
+impl DrawOnto for GraphicsElem {
+    fn draw_onto(&self, f: &mut iced::widget::canvas::Frame, bounds: Rect2f) {
         match self {
-            GraphicsElem::Circle { center, radius, fill, stroke } => {
-                let circle = canvas::path::Path::circle((*center).into(), *radius);
-                f.fill(&circle, fill.unwrap_or_default());
-                f.stroke(&circle, stroke.unwrap_or_default());
-            },
-            GraphicsElem::Rectangle { topleft, size, fill } => {
-                let rect = canvas::path::Path::rectangle((*topleft).into(), (*size).into());
-                f.fill(&rect, *fill);
-            }
+            GraphicsElem::Circle(c) => c.draw_onto(f, bounds),
+            GraphicsElem::Rectangle(r) => r.draw_onto(f, bounds),
         }
     }
 }
@@ -228,13 +282,14 @@ impl<'a, MsgT> canvas::Program<MsgT> for GateRenderer<'a> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
         let bounds: Rect2f = bounds.into();
         for (i, _c) in self.state.gates.iter().enumerate() {
+            let center = bounds.topleft + (bounds.size * (i as f32 + 0.5) / (self.state.gates.len() as f32));
             if i % 2 == 0 {
-                let center = bounds.topleft + (bounds.size * (i as f32 + 0.5) / (self.state.gates.len() as f32));
-                GraphicsElem::Circle { center, radius: 4.5, fill: Color::WHITE }.draw_onto(&mut frame, bounds);
+                Circle::new(center, 4.5)
+                    .with_fill(Some(FillStyle { color: Color::WHITE }))
+                    .draw_onto(&mut frame, bounds);
             } else {
-                let center = bounds.topleft + (bounds.size * (i as f32 + 0.5) / (self.state.gates.len() as f32));
                 let size = Vec2f {x: 9.0, y: 9.0};
-                GraphicsElem::Rectangle { topleft: center - size / 2.0, size, fill: Color::WHITE }.draw_onto(&mut frame, bounds);
+                Rectangle::new(center - size / 2.0, size).with_fill(Some(FillStyle { color: Color::BLACK })).draw_onto(&mut frame, bounds);
             }
         }
         vec![frame.into_geometry()]
