@@ -5,7 +5,7 @@ use crate::{
         ComponentId, ComponentIdIncrementer, GateConsumerSocket, GateProducerSocket, Vec2,
     },
     world::{
-        layout::{self, ConnDrawDanglingRes, ConnDrawNewRes, LayoutConn},
+        layout::{self, LayoutConn},
         sim,
     },
 };
@@ -33,51 +33,6 @@ impl WorldStateConns {
         }
     }
 
-    /// draw a new connection from a producer socket to a new point
-    pub fn draw_new(
-        &mut self,
-        counter: &mut ComponentIdIncrementer,
-        sim_world: &sim::WorldState,
-        layout_gates: &layout::WorldStateGates,
-        from: GateProducerSocket,
-        to: Vec2,
-    ) -> Result<ConnDrawNewRes, Box<layout::Error>> {
-        let conn_id = counter.get(crate::common::world::ComponentIdType::Conn);
-        let new_conn = LayoutConn::draw_new(conn_id, counter, sim_world, layout_gates, from, to)?;
-
-        self.conns.insert(conn_id, new_conn.conn);
-
-        Ok(ConnDrawNewRes {
-            producer_point: new_conn.producer_point,
-            dangling_point: new_conn.dangling_point,
-        })
-    }
-
-    /// draw a new segment from a dangling point of a conn
-    pub fn draw_dangling(
-        &mut self,
-        counter: &mut ComponentIdIncrementer,
-        conn_id: ComponentId,
-        from_point: ComponentId,
-        to: Vec2,
-    ) -> Result<ConnDrawDanglingRes, Box<layout::Error>> {
-        let conn = self.get_conn_mut(&conn_id)?;
-        let res = conn.draw_dangling(conn_id, counter, from_point, to)?;
-
-        Ok(ConnDrawDanglingRes {
-            dangling_point: res.dangling_point,
-        })
-    }
-
-    /// bind a point to a consumer
-    pub fn bind_consumer(
-        &mut self,
-        sim_world: &mut sim::WorldState,
-        conn_id: &ComponentId,
-        point_id: &ComponentId,
-        consumer_socket: GateConsumerSocket,
-    ) -> Result<(), Box<layout::Error>> {
-        let conn = self.get_conn_mut(conn_id)?;
-        conn.bind_consumer(sim_world, point_id, consumer_socket)
-    }
+    // IMPORTANT/TODO: any action that involves binding to a
+    // gate socket should also add an entry in LayoutGate
 }

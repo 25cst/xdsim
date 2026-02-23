@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::common;
+
 /// ID of a component in both the simulation and graphics world
 #[derive(Hash, PartialEq, Eq, Clone, Copy, Debug, PartialOrd, Ord)]
 pub struct ComponentId(u64);
@@ -35,6 +37,15 @@ impl ComponentIdIncrementer {
         self.content.increment();
         self.id_types.insert(self.content, component_type);
         self.content
+    }
+
+    /// unregister an ID when the component is removed
+    pub fn unregister(&mut self, component_id: &ComponentId) -> Result<(), Box<common::Error>> {
+        if self.id_types.remove(component_id).is_none() {
+            Err(common::Error::UnregisterNonexistentComponentId { id: *component_id }.into())
+        } else {
+            Ok(())
+        }
     }
 
     /// get the zero-ed incrementer

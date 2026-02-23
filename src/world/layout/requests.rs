@@ -6,7 +6,7 @@ use std::{
 use semver::Version;
 
 use crate::{
-    common::world::{ComponentId, ComponentVersion, Vec2},
+    common::world::{ComponentId, ComponentVersion, GateConsumerSocket, GateProducerSocket, Vec2},
     packages::destructor::{DestructedConn, DestructedData, DestructedGate},
 };
 
@@ -39,16 +39,20 @@ pub struct CreateBlankWorld {
     pub conn_handles: DestructedConnHandles,
 }
 
-/// response from drawing a new connection
-pub struct ConnDrawNewRes {
-    /// id of the point at the producer socket
-    pub producer_point: ComponentId,
-    /// id of the point at the dangling end of the segment
-    pub dangling_point: ComponentId,
+pub enum ConnDrawFrom {
+    Producer(GateProducerSocket),
+    Point(ComponentId),
 }
 
-/// response from drawing a segment from a dangling connection
-pub struct ConnDrawDanglingRes {
-    /// id of the new dangling point
-    pub dangling_point: ComponentId,
+pub enum ConnDrawTo {
+    Consumer(GateConsumerSocket),
+    Position(Vec2),
+}
+
+/// ids of points where the new segment is drawn from and to
+pub struct ConnDrawRes {
+    /// drawn from this point
+    pub from: ComponentId,
+    /// drawn to this point
+    pub to: ComponentId,
 }

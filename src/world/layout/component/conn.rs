@@ -23,21 +23,14 @@ pub struct LayoutConn {
     producer: Option<GateProducerSocket>,
     /// the data consumers the conn is connected to
     /// (number of points that are bounded to a consumer, if it drops to 0, remove the consumer)
-    consumers: HashMap<GateConsumerSocket, u64>,
+    consumers: HashSet<GateConsumerSocket>,
 }
 
 /// returned new connection, this sturct only exist to be destructed
-pub struct LayoutConnDrawNewRes {
+pub struct LayoutConnDrawRes {
     pub conn: LayoutConn,
-    // pub segment_id: ComponentId,
-    pub producer_point: ComponentId,
-    pub dangling_point: ComponentId,
-}
-
-/// returned new segment and point in connection, this sturct only exist to be destructed
-pub struct LayoutConnDrawDanglingRes {
-    // pub segment_id: ComponentId,
-    pub dangling_point: ComponentId,
+    pub from: ComponentId,
+    pub to: ComponentId,
 }
 
 impl LayoutConn {
@@ -90,6 +83,7 @@ impl LayoutConn {
     /// bind a point to a producer
     pub fn bind_producer(
         &mut self,
+        layout_gates: &mut layout::WorldStateGates,
         point_id: &ComponentId,
         producer_socket: GateProducerSocket,
     ) -> Result<(), Box<layout::Error>> {
@@ -113,9 +107,15 @@ impl LayoutConn {
     pub fn bind_consumer(
         &mut self,
         sim_world: &mut sim::WorldState,
+        layout_gates: &mut layout::WorldStateGates,
         point_id: &ComponentId,
         consumer_socket: GateConsumerSocket,
     ) -> Result<(), Box<layout::Error>> {
+        let point = self
+            .points
+            .get_mut(point_id)
+            .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: *point_id }))?;
+
         if let Some(producer) = self.producer {
             sim_world
                 .connect_gates(sim::requests::ConnectIOSockets {
@@ -125,13 +125,8 @@ impl LayoutConn {
                 .map_err(layout::Error::from_sim)?;
         }
 
-        let point = self
-            .points
-            .get_mut(point_id)
-            .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: *point_id }))?;
-
         point.consumer = Some(consumer_socket);
-        *self.consumers.entry(consumer_socket).or_default() += 1;
+        self.consumers.insert(consumer_socket);
         Ok(())
     }
 
@@ -140,15 +135,14 @@ impl LayoutConn {
         self_id: ComponentId,
         counter: &mut ComponentIdIncrementer,
         sim_world: &sim::WorldState,
-        layout_gates: &layout::WorldStateGates,
+        layout_gates: &mut layout::WorldStateGates,
         from: GateProducerSocket,
         to: Vec2,
-    ) -> Result<LayoutConnDrawNewRes, Box<layout::Error>> {
+    ) -> Result<LayoutConnDrawRes, Box<layout::Error>> {
         let sim_gate = sim_world
             .get_gate(from.get_id())
             .map_err(layout::Error::from_sim)?;
 
-        let def = sim_gate.get_def();
         let data_type = sim_gate
             .get_producer_type(&from)
             .map_err(layout::Error::from_sim)?
@@ -161,45 +155,51 @@ impl LayoutConn {
             segments: HashMap::new(),
             data_type,
             producer: None,
-            consumers: HashMap::new(),
+            consumers: HashSet::new(),
         };
 
         let from_id = out.make_point(
             self_id,
             counter,
             layout_gate.get_pos()
-                + Vec2::from(def.consumers[from.get_index()].position)
+                + layout_gate
+                    .get_producer_rel_pos(&from)?
                     .rotate(layout_gate.get_rotation()),
         );
+
+        // TODO: remove point if failed
+        out.bind_producer(layout_gates, &from_id, from)?;
+
         let to_id = out.make_point(self_id, counter, to);
+        // TODO: remove point if failed
         let _segment_id = out.make_segment(self_id, counter, from_id, to_id)?;
 
-        Ok(LayoutConnDrawNewRes {
+        Ok(LayoutConnDrawRes {
             conn: out,
-            producer_point: from_id,
-            dangling_point: to_id,
+            from: from_id,
+            to: to_id,
         })
     }
 
     /// draw a new segment from a point in this conn
+    ///
+    /// returns the component ID of the new dangling point
     pub fn draw_dangling(
         &mut self,
         self_id: ComponentId,
         counter: &mut ComponentIdIncrementer,
         from: ComponentId,
         to: Vec2,
-    ) -> Result<LayoutConnDrawDanglingRes, Box<layout::Error>> {
+    ) -> Result<ComponentId, Box<layout::Error>> {
         if !self.points.contains_key(&from) {
             return Err(layout::Error::ConnPointNotFound { point: from }.into());
         }
 
         let to_id = self.make_point(self_id, counter, to);
+        // TODO: remove point if failed
         let _segment_id = self.make_segment(self_id, counter, from, to_id)?;
 
-        Ok(LayoutConnDrawDanglingRes {
-            // segment_id,
-            dangling_point: to_id,
-        })
+        Ok(to_id)
     }
 }
 

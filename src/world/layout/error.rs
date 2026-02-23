@@ -1,4 +1,7 @@
-use crate::{common::world::ComponentId, world::sim};
+use crate::{
+    common::world::{ComponentId, GateConsumerSocket, GateProducerSocket},
+    world::sim,
+};
 
 pub enum Error {
     /// error originating from the simulation state
@@ -9,10 +12,16 @@ pub enum Error {
     ConnSegmentNotFound { segment: ComponentId },
     /// binding two producers to a conn
     ConnPointDoubleBindProducer { point: ComponentId },
+    /// binding two conn points to a consumer
+    DoubleBindConsumer { point: ComponentId },
     /// conn not exist in world when requested
     ConnNotFound { conn: ComponentId },
     /// No gate with requested ID in layout world
     GateNotFound { gate_id: ComponentId },
+    /// no such consumer socket
+    ConsumerSocketNotFound { socket: GateConsumerSocket },
+    /// no such producer socket
+    ProducerSocketNotFound { socket: GateProducerSocket },
 }
 
 impl Error {

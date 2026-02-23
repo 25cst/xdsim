@@ -40,4 +40,14 @@ impl WorldStateGates {
             .get(gate_id)
             .ok_or_else(|| Box::new(layout::Error::GateNotFound { gate_id: *gate_id }))
     }
+
+    /// returns a mutable reference to layout gate
+    pub fn get_gate_mut(
+        &mut self,
+        gate_id: &ComponentId,
+    ) -> Result<&mut LayoutGate, Box<layout::Error>> {
+        self.gates
+            .get_mut(gate_id)
+            .ok_or_else(|| Box::new(layout::Error::GateNotFound { gate_id: *gate_id }))
+    }
 }
