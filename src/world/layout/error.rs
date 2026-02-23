@@ -3,7 +3,7 @@ use crate::{
         self,
         world::{ComponentId, GateConsumerSocket, GateProducerSocket},
     },
-    world::sim,
+    world::{layout::SegmentDraw, sim},
 };
 
 pub enum Error {
@@ -31,4 +31,6 @@ pub enum Error {
     RmNonEmptySegment { segment: ComponentId },
     /// crate common error
     Common(Box<common::Error>),
+    /// unsupported segment draw operation
+    SegmentDrawUnsupported { request: SegmentDraw },
 }

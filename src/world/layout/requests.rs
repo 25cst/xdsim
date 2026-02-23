@@ -39,18 +39,27 @@ pub struct CreateBlankWorld {
     pub conn_handles: DestructedConnHandles,
 }
 
-pub enum ConnDrawFrom {
+/// `WorldState::draw_segment()`
+#[derive(Clone, Copy)]
+pub struct SegmentDraw {
+    pub from: SegmentDrawFrom,
+    pub to: SegmentDrawTo,
+}
+
+#[derive(Clone, Copy)]
+pub enum SegmentDrawFrom {
     Producer(GateProducerSocket),
     Point(ComponentId),
 }
 
-pub enum ConnDrawTo {
+#[derive(Clone, Copy)]
+pub enum SegmentDrawTo {
     Consumer(GateConsumerSocket),
     Position(Vec2),
 }
 
 /// ids of points where the new segment is drawn from and to
-pub struct ConnDrawRes {
+pub struct SegmentDrawRes {
     /// drawn from this point
     pub from: ComponentId,
     /// drawn to this point

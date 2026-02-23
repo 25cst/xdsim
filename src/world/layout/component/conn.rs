@@ -183,8 +183,7 @@ impl LayoutConn {
     /// draw a new segment from a producer socket
     pub fn draw_new(
         self_id: ComponentId,
-        counter: &mut ComponentIdIncrementer,
-        sim_world: &sim::WorldState,
+        sim_world: &mut sim::WorldState,
         layout_gates: &mut layout::WorldStateGates,
         from: GateProducerSocket,
         to: Vec2,
@@ -207,6 +206,8 @@ impl LayoutConn {
             producer: None,
             consumers: HashSet::new(),
         };
+
+        let counter = sim_world.counter_mut();
 
         let from_id = out.make_point(
             self_id,
