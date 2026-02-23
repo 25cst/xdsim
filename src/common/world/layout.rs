@@ -97,3 +97,21 @@ impl AddAssign for Rotation {
         self.normalise();
     }
 }
+
+pub struct BoundingBox {
+    top: f64,
+    bottom: f64,
+    left: f64,
+    right: f64,
+}
+
+impl From<xdsim_cbinds::common::BoundingBox> for BoundingBox {
+    fn from(value: xdsim_cbinds::common::BoundingBox) -> Self {
+        Self {
+            top: value.top,
+            bottom: value.bottom,
+            left: value.left,
+            right: value.right,
+        }
+    }
+}

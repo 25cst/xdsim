@@ -152,7 +152,7 @@ impl DestructedGate {
         Ok(DestructedGateDefinition {
             consumers: to_consumer_entries(consumers, gate_id)?,
             producers: to_producer_entries(producers, gate_id)?,
-            bounding_box: definition.bounding_box,
+            bounding_box: definition.bounding_box.into(),
         })
     }
 }

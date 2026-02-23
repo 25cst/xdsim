@@ -4,7 +4,7 @@ use xdsim_cbinds::{
 };
 
 use crate::{
-    common::world::{ComponentVersion, ComponentVersionReq, GatePtr, GatePtrMut},
+    common::world::{BoundingBox, ComponentVersion, ComponentVersionReq, GatePtr, GatePtrMut},
     packages::{
         destructor::{self, DestructRequest, component::v0},
         loader::LibraryHandle,
@@ -27,8 +27,7 @@ pub struct DestructedGateDefinition {
     /// producers in the order they should appear in the slice
     pub producers: Vec<DestructedGateProducerEntry>,
     /// The visual bounding box (dimension) of the gate
-    /// The bottom left corner is (0, 0), top right corner is (width, height)
-    pub bounding_box: Vec2,
+    pub bounding_box: BoundingBox,
 }
 
 pub struct DestructedGateConsumerEntry {
