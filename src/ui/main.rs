@@ -1,16 +1,13 @@
-use std::default;
 use std::ops::{Add, Div, Mul, Sub};
 
 use iced::Color;
-use iced::Length::Fill;
-use iced::widget::canvas::LineDash;
-use iced::{Element, Theme, mouse};
-use iced::widget::{button, canvas, row, text};
+use iced::{Element, mouse};
+use iced::widget::{button, canvas};
 
 use semver::{Version, VersionReq};
 
 use crate::{
-    common::world::{ComponentId, ComponentVersion, GateInputSocket, GateOutputSocket},
+    common::world::{ComponentId, ComponentVersion},
     packages::{
         indexer::{
             component::PackageIndexBuilder,
