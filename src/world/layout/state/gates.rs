@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    common::world::{ComponentId, Vec2},
+    common::world::{ComponentId, GateConsumerSocket, GateProducerSocket, Vec2},
     world::{
         layout::{self, component::LayoutGate},
         sim::SimGate,
@@ -49,5 +49,30 @@ impl WorldStateGates {
         self.gates
             .get_mut(gate_id)
             .ok_or_else(|| Box::new(layout::Error::GateNotFound { gate_id: *gate_id }))
+    }
+
+    /// bind a point in a layout conn to a consumer socket
+    ///
+    /// requires the consumer socket to not be bound to anything
+    pub fn point_bind_consumer(
+        &mut self,
+        consumer_socket: &GateConsumerSocket,
+        conn_point: ComponentId,
+    ) -> Result<(), Box<layout::Error>> {
+        self.get_gate_mut(consumer_socket.get_id())?
+            .point_bind_consumer(consumer_socket, conn_point)
+    }
+
+    /// bind a point in a layout conn to a producer socket
+    ///
+    /// USING THIS DIRECTLY WILL LEAVE THE WORLD INCONSISTENT, this function is only meant
+    /// to be used by LayoutConn
+    pub fn point_bind_producer(
+        &mut self,
+        producer_socket: &GateProducerSocket,
+        conn_point: ComponentId,
+    ) -> Result<(), Box<layout::Error>> {
+        self.get_gate_mut(producer_socket.get_id())?
+            .point_bind_producer(producer_socket, conn_point)
     }
 }

@@ -84,17 +84,19 @@ impl LayoutConn {
     pub fn bind_producer(
         &mut self,
         layout_gates: &mut layout::WorldStateGates,
-        point_id: &ComponentId,
+        point_id: ComponentId,
         producer_socket: GateProducerSocket,
     ) -> Result<(), Box<layout::Error>> {
         let point = self
             .points
-            .get_mut(point_id)
-            .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: *point_id }))?;
+            .get_mut(&point_id)
+            .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: point_id }))?;
 
         if self.producer.is_some() {
-            return Err(layout::Error::ConnPointDoubleBindProducer { point: *point_id }.into());
+            return Err(layout::Error::ConnPointDoubleBindProducer { point: point_id }.into());
         }
+
+        layout_gates.point_bind_producer(&producer_socket, point_id)?;
 
         point.before = LayoutConnPointBefore::Producer {
             producer_socket: producer_socket,
@@ -108,13 +110,13 @@ impl LayoutConn {
         &mut self,
         sim_world: &mut sim::WorldState,
         layout_gates: &mut layout::WorldStateGates,
-        point_id: &ComponentId,
+        point_id: ComponentId,
         consumer_socket: GateConsumerSocket,
     ) -> Result<(), Box<layout::Error>> {
         let point = self
             .points
-            .get_mut(point_id)
-            .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: *point_id }))?;
+            .get_mut(&point_id)
+            .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: point_id }))?;
 
         if let Some(producer) = self.producer {
             sim_world
@@ -124,6 +126,8 @@ impl LayoutConn {
                 })
                 .map_err(layout::Error::from_sim)?;
         }
+
+        layout_gates.point_bind_consumer(&consumer_socket, point_id)?;
 
         point.consumer = Some(consumer_socket);
         self.consumers.insert(consumer_socket);
@@ -168,7 +172,7 @@ impl LayoutConn {
         );
 
         // TODO: remove point if failed
-        out.bind_producer(layout_gates, &from_id, from)?;
+        out.bind_producer(layout_gates, from_id, from)?;
 
         let to_id = out.make_point(self_id, counter, to);
         // TODO: remove point if failed
