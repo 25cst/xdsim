@@ -74,4 +74,9 @@ impl WorldState {
         self.gates
             .connect(request.producer_socket, request.consumer_socket)
     }
+
+    /// get the component id counter
+    pub fn counter_mut(&mut self) -> &mut ComponentIdIncrementer {
+        &mut self.id_counter
+    }
 }

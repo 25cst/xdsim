@@ -1,11 +1,14 @@
 use crate::{
-    common::world::{ComponentId, GateConsumerSocket, GateProducerSocket},
+    common::{
+        self,
+        world::{ComponentId, GateConsumerSocket, GateProducerSocket},
+    },
     world::sim,
 };
 
 pub enum Error {
     /// error originating from the simulation state
-    Sim { reason: Box<sim::Error> },
+    Sim(Box<sim::Error>),
     /// point in a connection not found
     ConnPointNotFound { point: ComponentId },
     /// segment in a connection not found
@@ -17,15 +20,15 @@ pub enum Error {
     /// conn not exist in world when requested
     ConnNotFound { conn: ComponentId },
     /// No gate with requested ID in layout world
-    GateNotFound { gate_id: ComponentId },
+    GateNotFound { gate: ComponentId },
     /// no such consumer socket
     ConsumerSocketNotFound { socket: GateConsumerSocket },
     /// no such producer socket
     ProducerSocketNotFound { socket: GateProducerSocket },
-}
-
-impl Error {
-    pub fn from_sim(sim_error: Box<sim::Error>) -> Self {
-        Self::Sim { reason: sim_error }
-    }
+    /// removing a point that still have stuff connected to it
+    RmNonEmptyPoint { point: ComponentId },
+    /// removing a segment that still have stuff connected to it
+    RmNonEmptySegment { segment: ComponentId },
+    /// crate common error
+    Common(Box<common::Error>),
 }

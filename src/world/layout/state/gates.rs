@@ -38,7 +38,7 @@ impl WorldStateGates {
     pub fn get_gate(&self, gate_id: &ComponentId) -> Result<&LayoutGate, Box<layout::Error>> {
         self.gates
             .get(gate_id)
-            .ok_or_else(|| Box::new(layout::Error::GateNotFound { gate_id: *gate_id }))
+            .ok_or_else(|| Box::new(layout::Error::GateNotFound { gate: *gate_id }))
     }
 
     /// returns a mutable reference to layout gate
@@ -48,7 +48,7 @@ impl WorldStateGates {
     ) -> Result<&mut LayoutGate, Box<layout::Error>> {
         self.gates
             .get_mut(gate_id)
-            .ok_or_else(|| Box::new(layout::Error::GateNotFound { gate_id: *gate_id }))
+            .ok_or_else(|| Box::new(layout::Error::GateNotFound { gate: *gate_id }))
     }
 
     /// bind a point in a layout conn to a consumer socket

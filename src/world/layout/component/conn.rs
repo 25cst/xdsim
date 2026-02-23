@@ -4,9 +4,12 @@ use std::{
 };
 
 use crate::{
-    common::world::{
-        ComponentId, ComponentIdIncrementer, ComponentIdType, GateConsumerSocket,
-        GateProducerSocket, Vec2,
+    common::{
+        self,
+        world::{
+            ComponentId, ComponentIdIncrementer, ComponentIdType, GateConsumerSocket,
+            GateProducerSocket, Vec2,
+        },
     },
     packages::destructor::DestructedData,
     world::{layout, sim},
@@ -31,6 +34,13 @@ pub struct LayoutConnDrawRes {
     pub conn: LayoutConn,
     pub from: ComponentId,
     pub to: ComponentId,
+    pub segment: ComponentId,
+}
+
+/// returned draw danging conn, this sturct only exist to be destructed
+pub struct LayoutConnDrawDanglingRes {
+    pub to: ComponentId,
+    pub segment: ComponentId,
 }
 
 impl LayoutConn {
@@ -80,6 +90,44 @@ impl LayoutConn {
         Ok(id)
     }
 
+    /// helper to get a point
+    fn get_point(&self, point_id: &ComponentId) -> Result<&LayoutConnPoint, Box<layout::Error>> {
+        self.points
+            .get(point_id)
+            .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: *point_id }))
+    }
+
+    /// helper to get a segment
+    fn get_segment(
+        &self,
+        segment_id: &ComponentId,
+    ) -> Result<&LayoutConnSegment, Box<layout::Error>> {
+        self.segments
+            .get(segment_id)
+            .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: *segment_id }))
+    }
+
+    /// remove a conn point
+    pub fn rm_point(
+        &mut self,
+        counter: &mut ComponentIdIncrementer,
+        point_id: &ComponentId,
+    ) -> Result<(), Box<layout::Error>> {
+        let point = self.get_point(point_id)?;
+        if point.consumer.is_some()
+            || !point.before.is_dangling()
+            || !point.segments_after.is_empty()
+        {
+            return Err(layout::Error::RmNonEmptyPoint { point: *point_id }.into());
+        }
+
+        self.points.remove(point_id);
+        counter
+            .unregister(point_id)
+            .map_err(layout::Error::Common)?;
+        Ok(())
+    }
+
     /// bind a point to a producer
     pub fn bind_producer(
         &mut self,
@@ -98,9 +146,7 @@ impl LayoutConn {
 
         layout_gates.point_bind_producer(&producer_socket, point_id)?;
 
-        point.before = LayoutConnPointBefore::Producer {
-            producer_socket: producer_socket,
-        };
+        point.before = LayoutConnPointBefore::Producer { producer_socket };
         self.producer = Some(producer_socket);
         Ok(())
     }
@@ -124,7 +170,7 @@ impl LayoutConn {
                     consumer_socket,
                     producer_socket: producer,
                 })
-                .map_err(layout::Error::from_sim)?;
+                .map_err(layout::Error::Sim)?;
         }
 
         layout_gates.point_bind_consumer(&consumer_socket, point_id)?;
@@ -145,11 +191,11 @@ impl LayoutConn {
     ) -> Result<LayoutConnDrawRes, Box<layout::Error>> {
         let sim_gate = sim_world
             .get_gate(from.get_id())
-            .map_err(layout::Error::from_sim)?;
+            .map_err(layout::Error::Sim)?;
 
         let data_type = sim_gate
             .get_producer_type(&from)
-            .map_err(layout::Error::from_sim)?
+            .map_err(layout::Error::Sim)?
             .clone();
 
         let layout_gate = layout_gates.get_gate(from.get_id())?;
@@ -171,17 +217,24 @@ impl LayoutConn {
                     .rotate(layout_gate.get_rotation()),
         );
 
-        // TODO: remove point if failed
-        out.bind_producer(layout_gates, from_id, from)?;
+        out.bind_producer(layout_gates, from_id, from)
+            .inspect_err(|_| {
+                let _ = out.rm_point(counter, &from_id);
+            })?;
 
         let to_id = out.make_point(self_id, counter, to);
-        // TODO: remove point if failed
-        let _segment_id = out.make_segment(self_id, counter, from_id, to_id)?;
+        let segment_id = out
+            .make_segment(self_id, counter, from_id, to_id)
+            .inspect_err(|_| {
+                let _ = out.rm_point(counter, &from_id);
+                let _ = out.rm_point(counter, &to_id);
+            })?;
 
         Ok(LayoutConnDrawRes {
             conn: out,
             from: from_id,
             to: to_id,
+            segment: segment_id,
         })
     }
 
@@ -194,16 +247,22 @@ impl LayoutConn {
         counter: &mut ComponentIdIncrementer,
         from: ComponentId,
         to: Vec2,
-    ) -> Result<ComponentId, Box<layout::Error>> {
+    ) -> Result<LayoutConnDrawDanglingRes, Box<layout::Error>> {
         if !self.points.contains_key(&from) {
             return Err(layout::Error::ConnPointNotFound { point: from }.into());
         }
 
         let to_id = self.make_point(self_id, counter, to);
-        // TODO: remove point if failed
-        let _segment_id = self.make_segment(self_id, counter, from, to_id)?;
+        let segment_id = self
+            .make_segment(self_id, counter, from, to_id)
+            .inspect_err(|_| {
+                let _ = self.rm_point(counter, &to_id);
+            })?;
 
-        Ok(to_id)
+        Ok(LayoutConnDrawDanglingRes {
+            to: to_id,
+            segment: segment_id,
+        })
     }
 }
 
@@ -235,6 +294,12 @@ enum LayoutConnPointBefore {
     Segment { segment_id: ComponentId },
     /// nothing
     Dangling,
+}
+
+impl LayoutConnPointBefore {
+    pub fn is_dangling(&self) -> bool {
+        matches!(self, Self::Dangling)
+    }
 }
 
 /// a segment connecting between two points,

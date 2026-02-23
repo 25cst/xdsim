@@ -43,14 +43,14 @@ impl WorldState {
         let gate_id = self
             .sim_state
             .create_default_gate(sim::requests::CreateDefaultGate { gate: request.gate })
-            .map_err(layout::Error::from_sim)?;
+            .map_err(layout::Error::Sim)?;
 
         self.gates.add_gate(
             gate_id,
             request.origin,
             self.sim_state
                 .get_gate(&gate_id)
-                .map_err(layout::Error::from_sim)?,
+                .map_err(layout::Error::Sim)?,
         );
 
         Ok(gate_id)
@@ -66,7 +66,7 @@ impl WorldState {
     /// for a good implementation this should not happen.
     /// if an error is given, simply put it in debug logs or somewhere else
     pub fn tick_all(&mut self) -> Result<(), Box<layout::Error>> {
-        self.sim_state.tick_all().map_err(layout::Error::from_sim)?;
+        self.sim_state.tick_all().map_err(layout::Error::Sim)?;
         Ok(())
     }
 }
