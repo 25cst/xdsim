@@ -2,7 +2,7 @@ use crate::{
     common::world::ComponentId,
     world::{
         layout::{
-            self,
+            self, SegmentDraw, SegmentDrawFrom, SegmentDrawRes, SegmentDrawTo, WorldStateConns,
             requests::{CreateBlankWorld, CreateDefaultGate},
             state::gates::WorldStateGates,
         },
@@ -17,7 +17,7 @@ pub struct WorldState {
     sim_state: sim::WorldState,
 
     /// positions and paths of conns
-    // conns: WorldStateConns,
+    conns: WorldStateConns,
 
     /// position of gates
     gates: WorldStateGates,
@@ -32,6 +32,7 @@ impl WorldState {
                 data_handles: request.data_handles,
             }),
             gates: WorldStateGates::new_blank(),
+            conns: WorldStateConns::new_blank(),
         }
     }
 
@@ -43,14 +44,14 @@ impl WorldState {
         let gate_id = self
             .sim_state
             .create_default_gate(sim::requests::CreateDefaultGate { gate: request.gate })
-            .map_err(layout::Error::from_sim)?;
+            .map_err(layout::Error::Sim)?;
 
         self.gates.add_gate(
             gate_id,
             request.origin,
             self.sim_state
                 .get_gate(&gate_id)
-                .map_err(layout::Error::from_sim)?,
+                .map_err(layout::Error::Sim)?,
         );
 
         Ok(gate_id)
@@ -66,7 +67,43 @@ impl WorldState {
     /// for a good implementation this should not happen.
     /// if an error is given, simply put it in debug logs or somewhere else
     pub fn tick_all(&mut self) -> Result<(), Box<layout::Error>> {
-        self.sim_state.tick_all().map_err(layout::Error::from_sim)?;
+        self.sim_state.tick_all().map_err(layout::Error::Sim)?;
         Ok(())
+    }
+
+    /// draw segment from and to
+    pub fn draw_segment(
+        &mut self,
+        request: SegmentDraw,
+    ) -> Result<SegmentDrawRes, Box<layout::Error>> {
+        match (request.from, request.to) {
+            (SegmentDrawFrom::Producer(producer), SegmentDrawTo::Position(to_pos)) => {
+                let res =
+                    self.conns
+                        .draw_new(&mut self.sim_state, &mut self.gates, producer, to_pos)?;
+                Ok(SegmentDrawRes {
+                    from: res.from,
+                    to: res.to,
+                })
+            }
+            (SegmentDrawFrom::Point(from_point), SegmentDrawTo::Position(to_pos)) => {
+                let conn_id = self
+                    .sim_state
+                    .counter_mut()
+                    .assert_conn_point(&from_point)
+                    .map_err(layout::Error::Common)?;
+                let res = self.conns.draw_dangling(
+                    self.sim_state.counter_mut(),
+                    conn_id,
+                    from_point,
+                    to_pos,
+                )?;
+                Ok(SegmentDrawRes {
+                    from: from_point,
+                    to: res.to,
+                })
+            }
+            _ => Err(layout::Error::SegmentDrawUnsupported { request }.into()),
+        }
     }
 }

@@ -4133,7 +4133,7 @@ dependencies = [
 [[package]]
 name = "xdsim-cbinds"
 version = "0.1.0"
-source = "git+https://github.com/25cst/xdsim-cbinds?rev=1e27285#1e272858c3586164d9f94d4d26d609d45c9f5c7c"
+source = "git+https://github.com/25cst/xdsim-cbinds?rev=d275949#d2759495b3e850ec7a77cb671c40bf610a4f28e7"
 
 [[package]]
 name = "xkbcommon-dl"

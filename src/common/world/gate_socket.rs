@@ -1,15 +1,15 @@
 use crate::common::world::ComponentId;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-/// Identifier for an output socket of a gate
+/// Identifier for a producer socket of a gate
 /// - Id: ID of the gate
-/// - index: the nth output socket of the gate (as per definition)
-pub struct GateOutputSocket {
+/// - index: the nth producer socket of the gate (as per definition)
+pub struct GateProducerSocket {
     id: ComponentId,
     index: usize,
 }
 
-impl GateOutputSocket {
+impl GateProducerSocket {
     pub fn new(id: ComponentId, index: usize) -> Self {
         Self { id, index }
     }
@@ -24,15 +24,15 @@ impl GateOutputSocket {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-/// Identifier for an input socket of a gate
+/// Identifier for a consumer socket of a gate
 /// - Id: ID of the gate
-/// - index: the nth output socket of the gate (as per definition)
-pub struct GateInputSocket {
+/// - index: the nth producer socket of the gate (as per definition)
+pub struct GateConsumerSocket {
     id: ComponentId,
     index: usize,
 }
 
-impl GateInputSocket {
+impl GateConsumerSocket {
     pub fn new(id: ComponentId, index: usize) -> Self {
         Self { id, index }
     }

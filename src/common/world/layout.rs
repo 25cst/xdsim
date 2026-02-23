@@ -1,4 +1,7 @@
-use std::ops::{Add, AddAssign};
+use std::{
+    f64::consts::PI,
+    ops::{Add, AddAssign},
+};
 
 #[derive(Clone, Copy)]
 pub struct Vec2 {
@@ -20,21 +23,19 @@ impl Vec2 {
         Self { x, y }
     }
 
-    pub fn new_with_direction(direction: Direction, length: f64) -> Self {
-        match direction {
-            Direction::Up => Self::new(0.0, length),
-            Direction::Right => Self::new(length, 0.0),
-            Direction::Down => Self::new(0.0, -length),
-            Direction::Left => Self::new(-length, 0.0),
+    pub fn x(&self) -> f64 {
+        self.x
+    }
+
+    pub fn y(&self) -> f64 {
+        self.y
+    }
+
+    pub fn rotate(&self, rotation: Rotation) -> Self {
+        Self {
+            x: self.x * rotation.rad().cos() - self.y * rotation.rad().sin(),
+            y: self.x * rotation.rad().sin() + self.y * rotation.rad().cos(),
         }
-    }
-
-    pub fn x(&self) -> &f64 {
-        &self.x
-    }
-
-    pub fn y(&self) -> &f64 {
-        &self.y
     }
 }
 
@@ -55,63 +56,62 @@ impl Add for Vec2 {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Direction {
-    Up,
-    Right,
-    Down,
-    Left,
-}
-
-impl Direction {
-    pub fn opposite(&self) -> Self {
-        self.rotate(Rotation::D180)
-    }
-}
-
-impl From<xdsim_cbinds::common::Direction> for Direction {
-    fn from(value: xdsim_cbinds::common::Direction) -> Self {
-        match value {
-            xdsim_cbinds::common::Direction::Up => Self::Up,
-            xdsim_cbinds::common::Direction::Right => Self::Right,
-            xdsim_cbinds::common::Direction::Down => Self::Down,
-            xdsim_cbinds::common::Direction::Left => Self::Left,
-        }
-    }
-}
-
-/// rotation to apply to direction
+/// angle counter clockwise from the x-axis
 #[derive(Clone, Copy)]
-pub enum Rotation {
-    D0,
-    D90,
-    D180,
-    D270,
+pub struct Rotation(f64);
+
+impl Rotation {
+    /// normalise it to between 0 and 2pi
+    fn normalise(&mut self) {
+        self.0 = self.0.rem_euclid(2.0 * PI);
+    }
+
+    pub const fn zero() -> Self {
+        Rotation(0.0)
+    }
+
+    pub fn new(angle: f64) -> Self {
+        let mut out = Self(angle);
+        out.normalise();
+        out
+    }
+
+    pub fn rad(&self) -> f64 {
+        self.0
+    }
 }
 
-impl Direction {
-    /// apply rotation to direction
-    pub fn rotate(&self, rotation: Rotation) -> Self {
-        match rotation {
-            Rotation::D0 => *self,
-            Rotation::D90 => match self {
-                Direction::Up => Direction::Right,
-                Direction::Right => Direction::Down,
-                Direction::Down => Direction::Left,
-                Direction::Left => Direction::Up,
-            },
-            Rotation::D180 => match self {
-                Direction::Up => Direction::Down,
-                Direction::Down => Direction::Up,
-                Direction::Left => Direction::Right,
-                Direction::Right => Direction::Left,
-            },
-            Rotation::D270 => match self {
-                Direction::Up => Direction::Left,
-                Direction::Left => Direction::Down,
-                Direction::Down => Direction::Right,
-                Direction::Right => Direction::Up,
-            },
+impl Add for Rotation {
+    type Output = Self;
+
+    fn add(mut self, rhs: Self) -> Self::Output {
+        self.0 += rhs.0;
+        self.normalise();
+        self
+    }
+}
+
+impl AddAssign for Rotation {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0;
+        self.normalise();
+    }
+}
+
+pub struct BoundingBox {
+    top: f64,
+    bottom: f64,
+    left: f64,
+    right: f64,
+}
+
+impl From<xdsim_cbinds::common::BoundingBox> for BoundingBox {
+    fn from(value: xdsim_cbinds::common::BoundingBox) -> Self {
+        Self {
+            top: value.top,
+            bottom: value.bottom,
+            left: value.left,
+            right: value.right,
         }
     }
 }

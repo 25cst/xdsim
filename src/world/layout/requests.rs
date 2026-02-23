@@ -6,7 +6,7 @@ use std::{
 use semver::Version;
 
 use crate::{
-    common::world::{ComponentId, ComponentVersion, Direction, Vec2},
+    common::world::{ComponentId, ComponentVersion, GateConsumerSocket, GateProducerSocket, Vec2},
     packages::destructor::{DestructedConn, DestructedData, DestructedGate},
 };
 
@@ -37,4 +37,31 @@ pub struct CreateBlankWorld {
     pub gate_handles: DestructedGateHandles,
     /// All the conn that can be used in the world
     pub conn_handles: DestructedConnHandles,
+}
+
+/// `WorldState::draw_segment()`
+#[derive(Clone, Copy)]
+pub struct SegmentDraw {
+    pub from: SegmentDrawFrom,
+    pub to: SegmentDrawTo,
+}
+
+#[derive(Clone, Copy)]
+pub enum SegmentDrawFrom {
+    Producer(GateProducerSocket),
+    Point(ComponentId),
+}
+
+#[derive(Clone, Copy)]
+pub enum SegmentDrawTo {
+    Consumer(GateConsumerSocket),
+    Position(Vec2),
+}
+
+/// ids of points where the new segment is drawn from and to
+pub struct SegmentDrawRes {
+    /// drawn from this point
+    pub from: ComponentId,
+    /// drawn to this point
+    pub to: ComponentId,
 }

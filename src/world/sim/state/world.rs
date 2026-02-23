@@ -2,7 +2,7 @@
 //!
 //! The world state responds to messages defined in sim::requests
 use crate::{
-    common::world::{ComponentId, ComponentIdIncrementer, GateOutputSocket},
+    common::world::{ComponentId, ComponentIdIncrementer, GateProducerSocket},
     world::sim::{
         self, SimGate,
         component::SimData,
@@ -39,7 +39,7 @@ impl WorldState {
 
     /// tick the current world
     /// if this function returns error, its not end of the world
-    /// it just means a buffer is used as input to a gate, but is not present
+    /// it just means a buffer is used as consumer to a gate, but is not present
     /// this could be caused by bad implementation for edge cases such as:
     /// - new connection just added
     /// - an existing connection just been removed
@@ -50,9 +50,9 @@ impl WorldState {
         self.gates.tick_all()
     }
 
-    /// get data at output socket
-    pub fn get_buffer(&self, output_socket: &GateOutputSocket) -> Option<&SimData> {
-        self.gates.get_output(output_socket)
+    /// get data at producer socket
+    pub fn get_buffer(&self, producer_socket: &GateProducerSocket) -> Option<&SimData> {
+        self.gates.get_producer(producer_socket)
     }
 
     /// get a gate by ID
@@ -68,10 +68,15 @@ impl WorldState {
         }
     }
 
-    /// connect an input socket to an output socket,
-    /// requires: the input socket to not previously be connected to any other sockets
+    /// connect an consumer socket to an producer socket,
+    /// requires: the consumer socket to not previously be connected to any other sockets
     pub fn connect_gates(&mut self, request: ConnectIOSockets) -> Result<(), Box<sim::Error>> {
         self.gates
-            .connect(request.output_socket, request.input_socket)
+            .connect(request.producer_socket, request.consumer_socket)
+    }
+
+    /// get the component id counter
+    pub fn counter_mut(&mut self) -> &mut ComponentIdIncrementer {
+        &mut self.id_counter
     }
 }
