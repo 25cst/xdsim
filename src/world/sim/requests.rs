@@ -50,3 +50,10 @@ pub struct ConnectIOSockets {
     pub consumer_socket: GateConsumerSocket,
     pub producer_socket: GateProducerSocket,
 }
+
+/// `WorldState::disconnect_gates(DisconnectIOSockets)  -> Result&lt;()&gt;`
+pub struct DisconnectIOSockets {
+    // self explanatory
+    pub consumer_socket: GateConsumerSocket,
+    pub producer_socket: GateProducerSocket,
+}

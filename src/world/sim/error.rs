@@ -72,6 +72,8 @@ pub enum Error {
         current_producer: GateProducerSocket,
         new_producer: GateProducerSocket,
     },
+    /// trying to unbind a consumer socket that is not bound to anything
+    ConsumerSocketUnbindNothing { consumer_socket: GateConsumerSocket },
     /// An input socket is connected to an output socket but their data_types do not match
     IOTypeMismatch {
         consumer_socket: GateConsumerSocket,

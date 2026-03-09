@@ -75,6 +75,16 @@ impl WorldState {
             .connect(request.producer_socket, request.consumer_socket)
     }
 
+    /// disconnect an consumer socket to an producer socket,
+    /// requires: connection to exist
+    pub fn disconnect_gates(
+        &mut self,
+        request: DisconnectIOSockets,
+    ) -> Result<(), Box<sim::Error>> {
+        self.gates
+            .disconnect(&request.producer_socket, &request.consumer_socket)
+    }
+
     /// get the component id counter
     pub fn counter_mut(&mut self) -> &mut ComponentIdIncrementer {
         &mut self.id_counter

@@ -134,4 +134,40 @@ impl WorldStateGates {
 
         producer_gate.producer_connected_from(&producer_socket, consumer_socket)
     }
+
+    pub fn disconnect(
+        &mut self,
+        producer_socket: &GateProducerSocket,
+        consumer_socket: &GateConsumerSocket,
+    ) -> Result<(), Box<sim::Error>> {
+        // the unsafes are fine because we are modifying dependents in producer gate
+        // and source in consumer gate
+        let consumer_gate = unsafe {
+            &mut *self
+                .gates
+                .get(consumer_socket.get_id())
+                .ok_or_else(|| {
+                    Box::new(sim::Error::ConsumerSocketNotFound {
+                        consumer_socket: *consumer_socket,
+                    })
+                })?
+                .get()
+        };
+
+        let producer_gate = self
+            .gates
+            .get_mut(producer_socket.get_id())
+            .ok_or_else(|| {
+                Box::new(sim::Error::ProducerSocketNotFound {
+                    producer_socket: *producer_socket,
+                })
+            })?
+            .get_mut();
+
+        // stop if the first operation fails
+        consumer_gate.disconnect_consumer(consumer_socket)?;
+        producer_gate.producer_disconnected_from(producer_socket, consumer_socket)?;
+
+        Ok(())
+    }
 }

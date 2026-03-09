@@ -6,6 +6,7 @@ use crate::{
     world::{layout::SegmentDraw, sim},
 };
 
+#[derive(Debug)]
 pub enum Error {
     /// error originating from the simulation state
     Sim(Box<sim::Error>),
@@ -17,6 +18,8 @@ pub enum Error {
     ConnPointDoubleBindProducer { point: ComponentId },
     /// binding two conn points to a consumer
     DoubleBindConsumer { point: ComponentId },
+    /// unbinding a consumer from point that is not bound to a consumer
+    UnbindUnboundedConsumerPoint { point: ComponentId },
     /// conn not exist in world when requested
     ConnNotFound { conn: ComponentId },
     /// No gate with requested ID in layout world

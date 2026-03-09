@@ -40,19 +40,19 @@ pub struct CreateBlankWorld {
 }
 
 /// `WorldState::draw_segment()`
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct SegmentDraw {
     pub from: SegmentDrawFrom,
     pub to: SegmentDrawTo,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum SegmentDrawFrom {
     Producer(GateProducerSocket),
     Point(ComponentId),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum SegmentDrawTo {
     Consumer(GateConsumerSocket),
     Position(Vec2),

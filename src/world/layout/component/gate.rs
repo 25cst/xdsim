@@ -50,7 +50,7 @@ impl LayoutGate {
         self.rotation
     }
 
-    /// get relative position of a consumer socket
+    /// get relative position of a consumer socket, unrotated
     pub fn get_consumer_rel_pos(
         &self,
         consumer_socket: &GateConsumerSocket,
@@ -64,7 +64,7 @@ impl LayoutGate {
         }
     }
 
-    /// get relative position of a producer socket
+    /// get relative position of a producer socket, unrotated
     pub fn get_producer_rel_pos(
         &self,
         producer_socket: &GateProducerSocket,
@@ -78,9 +78,34 @@ impl LayoutGate {
         }
     }
 
+    /// get absolute position of a consumer socket
+    pub fn get_consumer_abs_pos(
+        &self,
+        consumer_socket: &GateConsumerSocket,
+    ) -> Result<Vec2, Box<layout::Error>> {
+        Ok(self.get_pos()
+            + self
+                .get_consumer_rel_pos(consumer_socket)?
+                .rotate(self.get_rotation()))
+    }
+
+    /// get absolute position of a producer socket
+    pub fn get_producer_abs_pos(
+        &self,
+        producer_socket: &GateProducerSocket,
+    ) -> Result<Vec2, Box<layout::Error>> {
+        Ok(self.get_pos()
+            + self
+                .get_producer_rel_pos(producer_socket)?
+                .rotate(self.get_rotation()))
+    }
+
     /// bind a point in a layout conn to a consumer socket
     ///
     /// requires the consumer socket to not be bound to anything
+    ///
+    /// DANGER: ONLY TO BE USED BY CONN COMPONENT, USING IT IN ANY OTHER WAY WILL
+    /// LEAD TO INCONSISTENCIES
     pub fn point_bind_consumer(
         &mut self,
         consumer_socket: &GateConsumerSocket,
@@ -104,6 +129,9 @@ impl LayoutGate {
     }
 
     /// bind a point in a layout conn to a producer socket
+    ///
+    /// DANGER: ONLY TO BE USED BY CONN COMPONENT, USING IT IN ANY OTHER WAY WILL
+    /// LEAD TO INCONSISTENCIES
     pub fn point_bind_producer(
         &mut self,
         producer_socket: &GateProducerSocket,
@@ -119,6 +147,27 @@ impl LayoutGate {
             })?;
 
         entry.bounded_conn.insert(conn_point);
+        Ok(())
+    }
+
+    /// unbind a conneciton point from a consumer
+    ///
+    /// DANGER: ONLY TO BE USED BY CONN COMPONENT, USING IT IN ANY OTHER WAY WILL
+    /// LEAD TO INCONSISTENCIES
+    pub fn point_unbind_consumer(
+        &mut self,
+        consumer_socket: &GateConsumerSocket,
+        conn_point: &ComponentId,
+    ) -> Result<(), Box<layout::Error>> {
+        let entry = self
+            .producers
+            .get_mut(consumer_socket.get_index())
+            .ok_or_else(|| {
+                Box::new(layout::Error::ConsumerSocketNotFound {
+                    socket: *consumer_socket,
+                })
+            })?;
+        entry.bounded_conn.remove(conn_point);
         Ok(())
     }
 }

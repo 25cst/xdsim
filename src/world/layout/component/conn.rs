@@ -4,12 +4,9 @@ use std::{
 };
 
 use crate::{
-    common::{
-        self,
-        world::{
-            ComponentId, ComponentIdIncrementer, ComponentIdType, GateConsumerSocket,
-            GateProducerSocket, Vec2,
-        },
+    common::world::{
+        ComponentId, ComponentIdIncrementer, ComponentIdType, GateConsumerSocket,
+        GateProducerSocket, Vec2,
     },
     packages::destructor::DestructedData,
     world::{layout, sim},
@@ -151,6 +148,26 @@ impl LayoutConn {
         Ok(())
     }
 
+    pub fn unbind_consumer(
+        &mut self,
+        sim_world: &mut sim::WorldState,
+        layout_gates: &mut layout::WorldStateGates,
+        point_id: ComponentId,
+    ) -> Result<(), Box<layout::Error>> {
+        let point = self
+            .points
+            .get_mut(&point_id)
+            .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: point_id }))?;
+
+        todo!();
+        let consumer = point.consumer.take().ok_or_else(|| {
+            Box::new(layout::Error::UnbindUnboundedConsumerPoint { point: point_id })
+        })?;
+        let _ = layout_gates.point_unbind_consumer(&consumer, &point_id);
+        self.consumers.remove(&consumer);
+        Ok(())
+    }
+
     /// bind a point to a consumer
     pub fn bind_consumer(
         &mut self,
@@ -209,14 +226,7 @@ impl LayoutConn {
 
         let counter = sim_world.counter_mut();
 
-        let from_id = out.make_point(
-            self_id,
-            counter,
-            layout_gate.get_pos()
-                + layout_gate
-                    .get_producer_rel_pos(&from)?
-                    .rotate(layout_gate.get_rotation()),
-        );
+        let from_id = out.make_point(self_id, counter, layout_gate.get_producer_abs_pos(&from)?);
 
         out.bind_producer(layout_gates, from_id, from)
             .inspect_err(|_| {

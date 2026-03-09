@@ -52,6 +52,12 @@ pub enum SimGateConsumerEntryStatus {
     },
 }
 
+impl SimGateConsumerEntryStatus {
+    pub fn is_unbounded(&self) -> bool {
+        matches!(self, SimGateConsumerEntryStatus::Unbound)
+    }
+}
+
 pub struct SimGateProducerEntry {
     handle: Rc<DestructedData>,
 
@@ -288,6 +294,56 @@ impl SimGate {
             }
             .into())
         }
+    }
+
+    /// disconnect a consumer on this gate
+    /// - consumer_socket is the socket at this gate
+    pub fn disconnect_consumer(
+        &mut self,
+        consumer_socket: &GateConsumerSocket,
+    ) -> Result<(), Box<sim::Error>> {
+        let consumer_entry = self
+            .consumers
+            .get_mut(consumer_socket.get_index())
+            .ok_or_else(|| {
+                Box::new(sim::Error::ConsumerSocketNotFound {
+                    consumer_socket: *consumer_socket,
+                })
+            })?;
+
+        if consumer_entry.status.is_unbounded() {
+            return Err(sim::Error::ConsumerSocketUnbindNothing {
+                consumer_socket: *consumer_socket,
+            }
+            .into());
+        }
+
+        consumer_entry.status = SimGateConsumerEntryStatus::Unbound;
+        Ok(())
+    }
+
+    /// disconnect a producer from the current gate
+    /// - producer socket is the socket from this gate
+    /// - consumer socket is the socket from the other gate
+    ///
+    /// DANGER, THIS WILL NOT PRODUCE AN ERROR, RUN disconnect_consumer BEFORE THIS
+    /// ABORT IF THAT FAILS
+    pub fn producer_disconnected_from(
+        &mut self,
+        producer_socket: &GateProducerSocket,
+        consumer_socket: &GateConsumerSocket,
+    ) -> Result<(), Box<sim::Error>> {
+        let producer_entry = self
+            .producers
+            .get_mut(producer_socket.get_index())
+            .ok_or_else(|| {
+                Box::new(sim::Error::ProducerSocketNotFound {
+                    producer_socket: *producer_socket,
+                })
+            })?;
+
+        producer_entry.dependents.remove(consumer_socket);
+        Ok(())
     }
 
     /// gate data type (destructed gate) of an producer index of this gate,

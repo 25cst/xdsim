@@ -2,11 +2,10 @@ use std::collections::HashMap;
 
 use crate::{
     common::world::{
-        ComponentId, ComponentIdIncrementer, ComponentIdType, GateConsumerSocket,
-        GateProducerSocket, Vec2,
+        ComponentId, ComponentIdIncrementer, ComponentIdType, GateProducerSocket, Vec2,
     },
     world::{
-        layout::{self, LayoutConn, LayoutConnDrawDanglingRes, LayoutConnDrawRes},
+        layout::{self, LayoutConn, LayoutConnDrawDanglingRes},
         sim,
     },
 };

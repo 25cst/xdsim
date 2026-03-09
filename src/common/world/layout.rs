@@ -3,7 +3,7 @@ use std::{
     ops::{Add, AddAssign},
 };
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Vec2 {
     x: f64,
     y: f64,

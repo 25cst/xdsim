@@ -1,5 +1,6 @@
 use crate::common::world::{ComponentId, ComponentIdType, ComponentIdTypeName};
 
+#[derive(Debug)]
 pub enum Error {
     /// attempting to unregister a nonexisting component id
     UnregisterNonexistentComponentId { id: ComponentId },

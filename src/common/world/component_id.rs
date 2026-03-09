@@ -18,7 +18,7 @@ impl ComponentId {
 }
 
 /// type the component ID points to
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum ComponentIdType {
     Gate,
     Conn,
@@ -26,7 +26,7 @@ pub enum ComponentIdType {
     ConnSegment { conn_id: ComponentId },
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum ComponentIdTypeName {
     Gate,
     Conn,

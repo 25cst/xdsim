@@ -10,7 +10,7 @@ use semver::Version;
 use crate::{
     common::world::ComponentVersion,
     packages::{
-        destructor::{self, DestructRequest, DestructedData, DestructedGate},
+        destructor::{self, DestructRequest, DestructedConn, DestructedData, DestructedGate},
         indexer::{self, component::PackageComponentType},
         loader::{self, LibraryHandle, manager::LoadManager},
     },
@@ -25,7 +25,7 @@ type DestructedGateHandles =
 type DestructedDataHandles =
     HashMap<PackageName, BTreeMap<PackageVersion, HashMap<LibName, Rc<DestructedData>>>>;
 type DestructedConnHandles =
-    HashMap<PackageName, BTreeMap<PackageVersion, HashMap<LibName, Rc<DestructedData>>>>;
+    HashMap<PackageName, BTreeMap<PackageVersion, HashMap<LibName, Rc<DestructedConn>>>>;
 
 struct LoadedEntry {
     pub variant: PackageComponentType,
@@ -42,6 +42,7 @@ struct LoadedEntry {
 pub struct IndexComponentLoader {
     pub gates: DestructedGateHandles,
     pub data: DestructedDataHandles,
+    pub conns: DestructedConnHandles,
 }
 
 impl IndexComponentLoader {
@@ -183,10 +184,16 @@ impl IndexComponentLoader {
             &loaded_index,
             &mut errors,
         );
+        let conns = destruct_component(
+            DestructedConn::new,
+            PackageComponentType::Conn,
+            &loaded_index,
+            &mut errors,
+        );
         // TODO: destruct connections
 
         if errors.is_empty() {
-            Ok(Self { gates, data })
+            Ok(Self { gates, data, conns })
         } else {
             Err(loader::Error::LoadAllComponentPackages { errors })
         }
