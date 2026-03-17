@@ -63,7 +63,7 @@ impl WorldState {
         if self.online_user_displays.remove(id).is_some() {
             Ok(())
         } else {
-            Err(user::Error::PlayerNotFound { id: *id }.into())
+            Err(user::Error::InvalidPlayerId { id: *id }.into())
         }
     }
 }

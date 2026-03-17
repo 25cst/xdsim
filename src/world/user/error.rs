@@ -6,5 +6,5 @@ use crate::{
 pub enum Error {
     Common(Box<common::Error>),
     PlayerAlreadyOnline { ident: UserIdentNormalised },
-    PlayerNotFound { id: ComponentId },
+    InvalidPlayerId { id: ComponentId },
 }
