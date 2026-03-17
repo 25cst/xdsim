@@ -9,7 +9,10 @@ use crate::{
         GateProducerSocket, Vec2,
     },
     packages::destructor::DestructedData,
-    world::{layout, sim},
+    world::{
+        layout::{self, DestructedConnHandles},
+        sim::{self, requests::DisconnectIOSockets},
+    },
 };
 
 /// collection of points and segments with constraints
@@ -126,7 +129,7 @@ impl LayoutConn {
     }
 
     /// bind a point to a producer
-    pub fn bind_producer(
+    fn bind_producer(
         &mut self,
         layout_gates: &mut layout::WorldStateGates,
         point_id: ComponentId,
@@ -148,7 +151,8 @@ impl LayoutConn {
         Ok(())
     }
 
-    pub fn unbind_consumer(
+    /// unbind a point from a consumer
+    fn unbind_consumer(
         &mut self,
         sim_world: &mut sim::WorldState,
         layout_gates: &mut layout::WorldStateGates,
@@ -159,17 +163,26 @@ impl LayoutConn {
             .get_mut(&point_id)
             .ok_or_else(|| Box::new(layout::Error::ConnPointNotFound { point: point_id }))?;
 
-        todo!();
-        let consumer = point.consumer.take().ok_or_else(|| {
+        let consumer_socket = point.consumer.take().ok_or_else(|| {
             Box::new(layout::Error::UnbindUnboundedConsumerPoint { point: point_id })
         })?;
-        let _ = layout_gates.point_unbind_consumer(&consumer, &point_id);
-        self.consumers.remove(&consumer);
+        let producer_socket = self.producer.ok_or_else(|| {
+            Box::new(layout::Error::UnbindUnboundedConsumerPoint { point: point_id })
+        })?;
+
+        let _ = layout_gates.point_unbind_consumer(&consumer_socket, &point_id);
+        self.consumers.remove(&consumer_socket);
+        sim_world
+            .disconnect_gates(DisconnectIOSockets {
+                consumer_socket,
+                producer_socket,
+            })
+            .map_err(layout::Error::Sim)?;
         Ok(())
     }
 
     /// bind a point to a consumer
-    pub fn bind_consumer(
+    fn bind_consumer(
         &mut self,
         sim_world: &mut sim::WorldState,
         layout_gates: &mut layout::WorldStateGates,

@@ -1,5 +1,5 @@
 use crate::{
-    common::world::ComponentId,
+    common::world::{ComponentId, ComponentIdIncrementer},
     world::{
         layout::{
             self, SegmentDraw, SegmentDrawFrom, SegmentDrawRes, SegmentDrawTo, WorldStateConns,
@@ -71,39 +71,8 @@ impl WorldState {
         Ok(())
     }
 
-    /// draw segment from and to
-    pub fn draw_segment(
-        &mut self,
-        request: SegmentDraw,
-    ) -> Result<SegmentDrawRes, Box<layout::Error>> {
-        match (request.from, request.to) {
-            (SegmentDrawFrom::Producer(producer), SegmentDrawTo::Position(to_pos)) => {
-                let res =
-                    self.conns
-                        .draw_new(&mut self.sim_state, &mut self.gates, producer, to_pos)?;
-                Ok(SegmentDrawRes {
-                    from: res.from,
-                    to: res.to,
-                })
-            }
-            (SegmentDrawFrom::Point(from_point), SegmentDrawTo::Position(to_pos)) => {
-                let conn_id = self
-                    .sim_state
-                    .counter_mut()
-                    .assert_conn_point(&from_point)
-                    .map_err(layout::Error::Common)?;
-                let res = self.conns.draw_dangling(
-                    self.sim_state.counter_mut(),
-                    conn_id,
-                    from_point,
-                    to_pos,
-                )?;
-                Ok(SegmentDrawRes {
-                    from: from_point,
-                    to: res.to,
-                })
-            }
-            _ => Err(layout::Error::SegmentDrawUnsupported { request }.into()),
-        }
+    /// get the component id counter
+    pub fn counter_mut(&mut self) -> &mut ComponentIdIncrementer {
+        self.sim_state.counter_mut()
     }
 }

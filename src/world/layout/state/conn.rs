@@ -5,7 +5,10 @@ use crate::{
         ComponentId, ComponentIdIncrementer, ComponentIdType, GateProducerSocket, Vec2,
     },
     world::{
-        layout::{self, LayoutConn, LayoutConnDrawDanglingRes},
+        layout::{
+            self, LayoutConn, LayoutConnDrawDanglingRes, SegmentDraw, SegmentDrawFrom,
+            SegmentDrawRes, SegmentDrawTo,
+        },
         sim,
     },
 };
@@ -75,5 +78,36 @@ impl WorldStateConns {
             from: res.from,
             conn: conn_id,
         })
+    }
+
+    /// draw segment from and to
+    pub fn draw_segment(
+        &mut self,
+        request: SegmentDraw,
+        sim_world: &mut sim::WorldState,
+        layout_gates: &mut layout::WorldStateGates,
+    ) -> Result<SegmentDrawRes, Box<layout::Error>> {
+        match (request.from, request.to) {
+            (SegmentDrawFrom::Producer(producer), SegmentDrawTo::Position(to_pos)) => {
+                let res = self.draw_new(sim_world, layout_gates, producer, to_pos)?;
+                Ok(SegmentDrawRes {
+                    from: res.from,
+                    to: res.to,
+                })
+            }
+            (SegmentDrawFrom::Point(from_point), SegmentDrawTo::Position(to_pos)) => {
+                let conn_id = sim_world
+                    .counter_mut()
+                    .assert_conn_point(&from_point)
+                    .map_err(layout::Error::Common)?;
+                let res =
+                    self.draw_dangling(sim_world.counter_mut(), conn_id, from_point, to_pos)?;
+                Ok(SegmentDrawRes {
+                    from: from_point,
+                    to: res.to,
+                })
+            }
+            _ => Err(layout::Error::SegmentDrawUnsupported { request }.into()),
+        }
     }
 }

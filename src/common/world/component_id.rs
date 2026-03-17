@@ -24,6 +24,7 @@ pub enum ComponentIdType {
     Conn,
     ConnPoint { conn_id: ComponentId },
     ConnSegment { conn_id: ComponentId },
+    Player,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -32,6 +33,7 @@ pub enum ComponentIdTypeName {
     Conn,
     ConnPoint,
     ConnSegment,
+    Player,
 }
 
 /// each world has a shared counter to ensure all component IDs are unique
@@ -119,6 +121,18 @@ impl ComponentIdIncrementer {
             other => Err(common::Error::ComponentIdTypeMismatch {
                 id: *id,
                 expected: ComponentIdTypeName::ConnSegment,
+                got: other,
+            }
+            .into()),
+        }
+    }
+
+    pub fn assert_player(&self, id: &ComponentId) -> Result<(), Box<common::Error>> {
+        match self.get_type(id)? {
+            ComponentIdType::Player => Ok(()),
+            other => Err(common::Error::ComponentIdTypeMismatch {
+                id: *id,
+                expected: ComponentIdTypeName::Player,
                 got: other,
             }
             .into()),
